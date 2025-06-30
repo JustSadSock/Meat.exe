@@ -1,6 +1,7 @@
 // Simplified WebGL engine. Zayebis'.
 let gl, canvas, devMode;
 let glitch = false, glitchTime=0;
+let time = 0;
 let program, buf, locPos, locColor, locSize;
 let camFov = 1, targetFov = 1;
 
@@ -59,20 +60,22 @@ function drawPoints(arr,color,size){
 }
 
 export function renderFrame(dt,bullets,enemies,blood,items,bulletSize){
+  time += dt;
+  const pulse = 0.5 + Math.sin(time*3.0)*0.5;
   if(glitch){
     glitchTime-=dt;
     if(glitchTime<=0) glitch=false;
     gl.clearColor(Math.random(),0,0.1,1);
   } else {
-    gl.clearColor(0.02,0.02,0.02,1);
+    gl.clearColor(0.02*pulse,0.02,0.02*pulse,1);
   }
   camFov += (targetFov - camFov) * dt * 8.0;
   targetFov += (1 - targetFov) * dt * 2.0;
   gl.clear(gl.COLOR_BUFFER_BIT);
-  drawPoints(enemies,[0,1,0],16.0);
+  drawPoints(enemies,[0,pulse,0],16.0);
   drawPoints(bullets,[1,0,0.3],bulletSize);
   drawPoints(items,[0,0.8,1.0],8.0);
-  drawPoints(blood,[0.8,0,0],4.0);
+  drawPoints(blood,[0.8*pulse,0,0],4.0);
 }
 
 export function setGlitch(state){

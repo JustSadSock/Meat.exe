@@ -68,8 +68,8 @@ export function generateTunnelMesh(cx,cy,THREE){
   const floorGeo=new THREE.PlaneGeometry(1,1);
   floorGeo.rotateX(-Math.PI/2);
   const wallGeo=new THREE.PlaneGeometry(1,2);
-  const floorMat=new THREE.MeshBasicMaterial({color:0x222222});
-  const wallMat=new THREE.MeshBasicMaterial({color:0x444444});
+  const floorMat=new THREE.MeshStandardMaterial({color:0x772222, roughness:0.8, metalness:0.1, emissive:0x330000});
+  const wallMat=new THREE.MeshStandardMaterial({color:0x773333, roughness:0.9, metalness:0.1, emissive:0x220000});
   const cellSet=new Set(cells.map(c=>c.x+','+c.y));
   for(const c of cells){
     const fx=c.x;
@@ -88,5 +88,6 @@ export function generateTunnelMesh(cx,cy,THREE){
       }
     }
   }
+  group.userData.materials={floor:floorMat,wall:wallMat};
   return group;
 }

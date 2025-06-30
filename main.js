@@ -4,6 +4,7 @@ import { guns, reloadShader, initGuns, addFragment, getBestFragment, applyFragme
 import { updateBlood, spawnBlood, getBlood, bindPlayer } from './goreSim.js';
 import { initMeta, mutateRules, getRules, setPerformanceSettings } from './metaMutate.js';
 import { AABB, circleVsCircle, circleInsideAABB, clampCircleToAABB } from './geom.js';
+import { initAudio, triggerGlitch } from './audio.js';
 
 const dev = new URLSearchParams(location.search).get('dev') === '1';
 const canvas = document.getElementById('gl');
@@ -29,7 +30,10 @@ if(hasTouch){
 let locked=false,cx=window.innerWidth/2,cy=window.innerHeight/2;
 if(!hasTouch){
   canvas.addEventListener('click',()=>{
-    if(!locked) canvas.requestPointerLock();
+    if(!locked){
+      canvas.requestPointerLock();
+      initAudio();
+    }
     else fire();
   });
   document.addEventListener('pointerlockchange',()=>{
@@ -103,8 +107,6 @@ let elapsed=0;
 let currentGun=0;
 let shootTimer=0;
 const keys={};
-const hpVal=document.getElementById('hpVal');
-const ammoVal=document.getElementById('ammoVal');
 const fpsEl=document.getElementById('fps');
 const bloodCap=document.getElementById('bloodCap');
 bloodCap.value=getRules().bloodLimit;
@@ -259,8 +261,10 @@ function loop(ts){
     if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:bullets[i].r},{x:enemies[j].x,y:enemies[j].y,r:ENEMY_R})){
       spawnBlood(enemies[j].x,enemies[j].y);
       rocketKnockback(bullets[i].x,bullets[i].y);
+      const fatal = bullets[i].damage >= enemies[j].hp;
       enemies[j].hp-=bullets[i].damage;
       damageDealt+=bullets[i].damage;
+      if(fatal) triggerGlitch();
       if(enemies[j].hp<=0 && !enemies[j].immortal){
         if(enemies[j].type==='hashHeart' && enemies[j].phase<3){
           enemies[j].phase++;
@@ -290,8 +294,6 @@ function loop(ts){
       fragItems.splice(i,1);
     }
   }
-  hpVal.textContent=Math.max(0,player.hp);
-  ammoVal.textContent=fragmentInventory.length;
   if(player.hp<=0){
     mutateRules();
     player.hp=100;difficulty=1;kills=0;
