@@ -60,7 +60,7 @@ function drawPoints(arr,color,size){
   gl.drawArrays(gl.POINTS,0,arr.length);
 }
 
-export function renderFrame(dt,bullets,enemies,blood,items,bulletSize){
+export function renderFrame(dt,bullets,enemies,blood,items,map,bulletSize,mapCellSize){
   time += dt;
   baseFov=getRules().FOV||1;
   const pulse = 0.5 + Math.sin(time*3.0)*0.5;
@@ -74,6 +74,8 @@ export function renderFrame(dt,bullets,enemies,blood,items,bulletSize){
   camFov += (targetFov*baseFov - camFov) * dt * 8.0;
   targetFov += (baseFov - targetFov) * dt * 2.0;
   gl.clear(gl.COLOR_BUFFER_BIT);
+  const cellPixels = mapCellSize/camFov*canvas.height;
+  drawPoints(map,[0.3,0.3,0.3],cellPixels);
   drawPoints(enemies,[0,pulse,0],16.0);
   drawPoints(bullets,[1,0,0.3],bulletSize);
   drawPoints(items,[0,0.8,1.0],8.0);
