@@ -77,6 +77,9 @@ const loadedChunks={};
 loadedChunks['0,0']=generateOrgan(0,0).map(t=>AABB(t.x*CHUNK_SIZE,t.y*CHUNK_SIZE,CHUNK_SIZE,CHUNK_SIZE));
 
 const player={x:0.5,y:0.5,vx:0,vy:0,hp:100};
+let sprint=false;
+let slideTimer=0;
+let hook=null;
 let bullets=[],enemies=[],wave=7,difficulty=1,kills=0;
 let elapsed=0;
 let currentGun=0;
@@ -112,6 +115,17 @@ function spawnWave(d,immortal=false){
   }
 }
 
+function rocketKnockback(x,y){
+  const dx=player.x-x;
+  const dy=player.y-y;
+  const dist=Math.hypot(dx,dy);
+  if(dist<0.1){
+    const k=0.4/dist;
+    player.vx+=dx*k;
+    player.vy+=dy*k;
+  }
+}
+
 spawnWave(difficulty);
 
 document.getElementById('glitchBtn').onclick = () => setGlitch(true);
@@ -136,15 +150,22 @@ function loop(ts){
   const rules=getRules();
   let ax=(keys['d']?1:0)-(keys['a']?1:0)+moveJoy.x;
   let ay=(keys['s']?1:0)-(keys['w']?1:0)+moveJoy.y;
-  if(ax||ay){
+  let accel=0.6*(sprint?1.8:1);
+  if(ax||ay && slideTimer<=0){
     const l=Math.hypot(ax,ay);ax/=l;ay/=l;
-    const accel=0.6;
     player.vx+=ax*accel*dt;
     player.vy+=ay*accel*dt;
   }
+  if(hook){
+    player.vx+=hook.dx*3*dt;
+    player.vy+=hook.dy*3*dt;
+    hook.time-=dt; if(hook.time<=0) hook=null;
+  }
   player.vy+=0.4*rules.gravity*dt;
-  player.vx*=rules.friction;
-  player.vy*=rules.friction;
+  const fr=slideTimer>0?Math.pow(rules.friction,0.5):rules.friction;
+  player.vx*=fr;
+  player.vy*=fr;
+  if(slideTimer>0) slideTimer-=dt;
   player.x+=player.vx*dt;
   player.y+=player.vy*dt;
   const cxx=Math.floor(player.x/CHUNK_SIZE);
@@ -158,8 +179,20 @@ function loop(ts){
       console.log('generate',key,cells);
     }
   }
-  bullets.forEach(b=>{b.x+=b.dx*dt;b.y+=b.dy*dt;b.life-=dt;});
-  bullets=bullets.filter(b=>b.life>0&&Math.abs(b.x-player.x)<1&&Math.abs(b.y-player.y)<1);
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];
+    b.x+=b.dx*dt;
+    b.y+=b.dy*dt;
+    b.life-=dt;
+    if(b.life<=0){
+      rocketKnockback(b.x,b.y);
+      bullets.splice(i,1);
+      continue;
+    }
+    if(Math.abs(b.x-player.x)>=1||Math.abs(b.y-player.y)>=1){
+      bullets.splice(i,1);
+    }
+  }
   const allBoxes=[];
   for(const k in loadedChunks) allBoxes.push(...loadedChunks[k]);
   enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*0.1*dt;e.y+=dy/l*0.1*dt;
@@ -183,6 +216,7 @@ function loop(ts){
   for(let i=bullets.length-1;i>=0;i--)for(let j=enemies.length-1;j>=0;j--){
     if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:bullets[i].r},{x:enemies[j].x,y:enemies[j].y,r:ENEMY_R})){
       spawnBlood(enemies[j].x,enemies[j].y);
+      rocketKnockback(bullets[i].x,bullets[i].y);
       if(!enemies[j].immortal){enemies.splice(j,1);kills++;}
       bullets.splice(i,1);
       break;
@@ -228,6 +262,15 @@ window.addEventListener('keydown', e=>{
   else if(k==='ArrowRight') keys['d']=true;
   keys[k]=true;
   if(k==='m') mutateRules();
+  if(k==='Shift') sprint=true;
+  if(k==='Control') slideTimer=0.3;
+  if(k===' ') player.vy-=0.3;
+  if(k==='g'){
+    let dx,dy;
+    if(hasTouch){dx=aimJoy.x;dy=aimJoy.y;}else{dx=cx/window.innerWidth-0.5;dy=cy/window.innerHeight-0.5;}
+    const l=Math.hypot(dx,dy)||1;
+    hook={dx:dx/l,dy:dy/l,time:0.4};
+  }
 });
 window.addEventListener('keyup', e=>{
   const k=e.key;
@@ -236,4 +279,5 @@ window.addEventListener('keyup', e=>{
   else if(k==='ArrowLeft') keys['a']=false;
   else if(k==='ArrowRight') keys['d']=false;
   keys[k]=false;
+  if(k==='Shift') sprint=false;
 });
