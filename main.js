@@ -2,7 +2,7 @@ import { initEngine, renderFrame, setGlitch, kickFov } from './engine.js';
 import { generateOrgan } from './organGen.js';
 import { guns, reloadShader, initGuns, addFragment, getBestFragment, applyFragment, fragmentInventory } from './shaderGuns.js';
 import { updateBlood, spawnBlood, getBlood, bindPlayer } from './goreSim.js';
-import { initMeta, mutateRules, getRules, setPerformanceSettings } from './metaMutate.js';
+import { initMeta, mutateRules, getRules, setPerformanceSettings, formatRules } from './metaMutate.js';
 import { AABB, circleVsCircle, circleInsideAABB, clampCircleToAABB } from './geom.js';
 import { initAudio, triggerGlitch } from './audio.js';
 
@@ -109,10 +109,26 @@ let shootTimer=0;
 const keys={};
 const fpsEl=document.getElementById('fps');
 const bloodCap=document.getElementById('bloodCap');
+const metaEl=document.getElementById('meta');
+const reportEl=document.getElementById('report');
 bloodCap.value=getRules().bloodLimit;
 bloodCap.addEventListener('input',()=>{
   setPerformanceSettings({bloodLimit:Number(bloodCap.value)});
+  updateMeta();
 });
+
+function updateMeta(){
+  metaEl.textContent = 'Rules:\n'+formatRules();
+}
+
+updateMeta();
+
+function showReport(m){
+  const txt = `You died!\nChanged: ${m.key} -> ${typeof m.value==='number'?m.value.toFixed(2):m.value}\n\n`+formatRules();
+  reportEl.textContent=txt;
+  reportEl.style.display='block';
+  setTimeout(()=>{reportEl.style.display='none';},2000);
+}
 
 function fire(){
   if(shootTimer>0) return;
@@ -133,7 +149,8 @@ function fire(){
 
 function makeEnemy(type,x,y,immortal=false){
   const base=enemyTypes[type]||enemyTypes.normal;
-  return {x,y,immortal,type,speed:base.speed,hp:base.hp,phase:1,phantom:base.phantom,boss:base.boss,life:base.life||Infinity};
+  const mult=getRules().enemySpeed||1;
+  return {x,y,immortal,type,speed:base.speed*mult,hp:base.hp,phase:1,phantom:base.phantom,boss:base.boss,life:base.life||Infinity};
 }
 
 function spawnWave(d,type="normal",immortal=false){
@@ -295,7 +312,9 @@ function loop(ts){
     }
   }
   if(player.hp<=0){
-    mutateRules();
+    const m=mutateRules();
+    updateMeta();
+    showReport(m);
     player.hp=100;difficulty=1;kills=0;
   }
   if(elapsed>=60){

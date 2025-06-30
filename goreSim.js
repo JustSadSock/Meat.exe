@@ -14,7 +14,10 @@ export function spawnBlood(x,y,state='normal',amount=10){
     const excess=blood.length-limit;
     for(let i=0;i<excess;i++){
       blood[i].life*=0.5;
-      if(playerRef) playerRef.hp=Math.min(100,playerRef.hp+0.1);
+      if(playerRef){
+        const regen=getRules().regen||0;
+        playerRef.hp=Math.min(100,playerRef.hp+0.1*regen);
+      }
     }
     blood.splice(0,excess);
   }
