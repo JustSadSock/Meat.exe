@@ -89,6 +89,7 @@ else {
 }
 
 const CHUNK_SIZE=0.25;
+const CELLS_PER_CHUNK=8;
 const PLAYER_R=0.03;
 const ENEMY_R=0.03;
 const BULLET_R=0.015;
@@ -106,10 +107,17 @@ const enemyTypes={
   hashHeart:{speed:0.05,hp:100,boss:true}
 };
 
-let spawn={x:0.5,y:0.5};
+let spawn={x:(CELLS_PER_CHUNK/2+0.5)*CHUNK_SIZE,y:(CELLS_PER_CHUNK/2+0.5)*CHUNK_SIZE};
 if(firstCells.length>0){
-  const c=firstCells[Math.floor(firstCells.length*Math.random())];
-  spawn={x:(c.x+0.5)*CHUNK_SIZE,y:(c.y+0.5)*CHUNK_SIZE};
+  const centralX=CELLS_PER_CHUNK/2;
+  const centralY=CELLS_PER_CHUNK/2;
+  const key=centralX+','+centralY;
+  if(firstCells.some(c=>c.x===centralX&&c.y===centralY)){
+    spawn={x:(centralX+0.5)*CHUNK_SIZE,y:(centralY+0.5)*CHUNK_SIZE};
+  }else{
+    const c=firstCells[0];
+    spawn={x:(c.x+0.5)*CHUNK_SIZE,y:(c.y+0.5)*CHUNK_SIZE};
+  }
 }
 const player={x:spawn.x,y:spawn.y,vx:0,vy:0,hp:100};
 bindPlayer(player);

@@ -93,12 +93,13 @@ export function generateOrgan(cx,cy){
     prevCenter=center;
   }
   // connect to edges
+  const central={x:Math.floor(SIZE/2),y:Math.floor(SIZE/2)};
+  dig(central.x,central.y);
+  centers.forEach(c=>connect(c,central));
   const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
-  const room=listFirst(cellSet);
-  const [cxr,cyr]=room?room.split(',').map(Number):[Math.floor(SIZE/2),Math.floor(SIZE/2)];
   for(let i=0;i<4;i++){
     if(edgeOpen(cx,cy,i)){
-      let x=cxr,y=cyr;
+      let x=central.x,y=central.y;
       while(x>=0&&x<SIZE&&y>=0&&y<SIZE){
         dig(x,y);
         x+=dirs[i][0];

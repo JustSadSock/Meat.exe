@@ -19,6 +19,7 @@ let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false;
 let velocity=3;
 let prevTime=performance.now();
 const CHUNK_SIZE=8;
+const CELLS_PER_CHUNK=8;
 const loadedChunks={};
 const loadedCells={};
 const PLAYER_R=0.2;
@@ -59,9 +60,15 @@ function init(){
   loadedChunks['0,0']=level;
   loadedCells['0,0']=generateOrgan(0,0);
 
-  // spawn player at the center of the first generated cell so we are not stuck
-  const first = loadedCells['0,0'][0];
-  if(first){
+  // spawn player at the center cell to ensure corridor connectivity
+  const cx = CELLS_PER_CHUNK/2;
+  const cy = CELLS_PER_CHUNK/2;
+  const hasCenter = loadedCells['0,0'].some(c => c.x===cx && c.y===cy);
+  if(hasCenter){
+    camera.position.x = cx + 0.5;
+    camera.position.z = cy + 0.5;
+  }else if(loadedCells['0,0'][0]){
+    const first = loadedCells['0,0'][0];
     camera.position.x = first.x + 0.5;
     camera.position.z = first.y + 0.5;
   }
