@@ -1,4 +1,4 @@
-import { initEngine, renderFrame, setGlitch } from './engine.js';
+import { initEngine, renderFrame, setGlitch, kickFov } from './engine.js';
 import { generateOrgan } from './organGen.js';
 import { guns, reloadShader } from './shaderGuns.js';
 import { updateBlood, spawnBlood, getBlood } from './goreSim.js';
@@ -28,8 +28,11 @@ document.addEventListener('mousemove',e=>{
   cross.style.top=cy+'px';
 });
 
-const player={x:0.5,y:0.5};
-let bullets=[],enemies=[],wave=7,difficulty=1;
+const player={x:0.5,y:0.5,hp:100};
+let bullets=[],enemies=[],wave=7,difficulty=1,kills=0;
+let elapsed=0;
+const hpVal=document.getElementById('hpVal');
+const fpsEl=document.getElementById('fps');
 
 function fire(){
   const dx=cx/window.innerWidth-0.5;
@@ -37,15 +40,16 @@ function fire(){
   const l=Math.hypot(dx,dy)||1;
   bullets.push({x:player.x,y:player.y,dx:dx/l*0.6,dy:dy/l*0.6,life:2});
   setGlitch(true);
+  kickFov(0.2);
 }
 
-function spawnWave(d){
+function spawnWave(d,immortal=false){
   for(let i=0;i<3*d;i++){
     const s=Math.floor(Math.random()*4);
     let x,y;
     if(s===0){x=Math.random();y=-0.05;}else if(s===1){x=Math.random();y=1.05;}
     else if(s===2){x=-0.05;y=Math.random();}else{x=1.05;y=Math.random();}
-    enemies.push({x,y});
+    enemies.push({x,y,immortal});
   }
 }
 
@@ -59,18 +63,47 @@ if(dev){
   edit.style.display='block';
   edit.addEventListener('input', () => reloadShader(edit.value));
   edit.value = guns[0].fragSrc;
+  fpsEl.style.display='block';
 }
 
 let last = 0;
 function loop(ts){
   const dt = (ts - last)/1000;
   last = ts;
+  elapsed += dt;
+  if(dev) fpsEl.textContent = Math.round(1/dt)+" FPS";
   bullets.forEach(b=>{b.x+=b.dx*dt;b.y+=b.dy*dt;b.life-=dt;});
   bullets=bullets.filter(b=>b.life>0&&b.x>-0.1&&b.x<1.1&&b.y>-0.1&&b.y<1.1);
   enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*0.1*dt;e.y+=dy/l*0.1*dt;});
   for(let i=bullets.length-1;i>=0;i--)for(let j=enemies.length-1;j>=0;j--){
     const dx=bullets[i].x-enemies[j].x,dy=bullets[i].y-enemies[j].y;
-    if(Math.hypot(dx,dy)<0.03){spawnBlood(enemies[j].x,enemies[j].y);enemies.splice(j,1);bullets.splice(i,1);break;}
+    if(Math.hypot(dx,dy)<0.03){
+      spawnBlood(enemies[j].x,enemies[j].y);
+      if(!enemies[j].immortal){enemies.splice(j,1);kills++;}
+      bullets.splice(i,1);
+      break;
+    }
+  }
+  for(let i=enemies.length-1;i>=0;i--){
+    const dx=player.x-enemies[i].x,dy=player.y-enemies[i].y;
+    if(Math.hypot(dx,dy)<0.03){
+      player.hp-=10;spawnBlood(player.x,player.y);enemies.splice(i,1);
+    }
+  }
+  hpVal.textContent=Math.max(0,player.hp);
+  if(player.hp<=0){
+    mutateRules();
+    player.hp=100;difficulty=1;kills=0;
+  }
+  if(elapsed>=60){
+    const dps=kills/elapsed;
+    const expected=difficulty;
+    difficulty=Math.min(3.5,Math.max(0.7,0.8+(dps/expected-1)*0.6-(player.hp<50?0.1:0)+(elapsed/60)*0.05));
+    if(dps/expected>1.4){
+      setGlitch(true);
+      spawnWave(Math.ceil(difficulty),true); // anti-cheat mobs
+    }
+    kills=0;elapsed=0;
   }
   wave-=dt; if(wave<=0){spawnWave(difficulty);wave=7;}
   updateBlood(dt);

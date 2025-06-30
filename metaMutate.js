@@ -12,3 +12,7 @@ export function mutateRules(){
   localStorage.setItem('meatRules',JSON.stringify(rules));
   console.log('Meta-mutation:',k,rules[k]);
 }
+
+export function getRules(){
+  return rules;
+}

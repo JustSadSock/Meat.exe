@@ -2,6 +2,7 @@
 let gl, canvas, devMode;
 let glitch = false, glitchTime=0;
 let program, buf, locPos, locColor, locSize;
+let camFov = 1, targetFov = 1;
 
 export function initEngine(g,c,dev){
   gl=g;canvas=c;devMode=dev;
@@ -14,6 +15,10 @@ export function initEngine(g,c,dev){
   locSize=gl.getUniformLocation(program,'u_size');
   buf=gl.createBuffer();
   gl.clearColor(0,0,0,1);
+}
+
+export function kickFov(amount){
+  targetFov = 1 + amount;
 }
 
 function resize(){
@@ -38,8 +43,10 @@ function drawPoints(arr,color,size){
   if(arr.length===0)return;
   const verts=new Float32Array(arr.length*2);
   for(let i=0;i<arr.length;i++){
-    verts[i*2]=arr[i].x*2-1;
-    verts[i*2+1]=1-arr[i].y*2;
+    const sx=(arr[i].x-0.5)/camFov+0.5;
+    const sy=(arr[i].y-0.5)/camFov+0.5;
+    verts[i*2]=sx*2-1;
+    verts[i*2+1]=1-sy*2;
   }
   gl.useProgram(program);
   gl.bindBuffer(gl.ARRAY_BUFFER,buf);
@@ -59,6 +66,8 @@ export function renderFrame(dt,bullets,enemies,blood){
   } else {
     gl.clearColor(0.02,0.02,0.02,1);
   }
+  camFov += (targetFov - camFov) * dt * 8.0;
+  targetFov += (1 - targetFov) * dt * 2.0;
   gl.clear(gl.COLOR_BUFFER_BIT);
   drawPoints(enemies,[0,1,0],16.0);
   drawPoints(bullets,[1,0,0.3],8.0);
