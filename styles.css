@@ -1,5 +1,5 @@
 html,body{width:100vw;height:100vh;margin:0;overflow:hidden;touch-action:none;background:#050505;background:radial-gradient(circle,#0a0015,#050505);color:#faffff;font-family:monospace}
-canvas{display:block;width:100%;height:100%;}
+canvas{position:absolute;top:0;left:0;display:block;width:100%;height:100%;}
 .panel{position:absolute;padding:4px 8px;background:rgba(0,0,0,0.3);backdrop-filter:blur(6px);text-shadow:0 0 6px currentColor;border:1px solid rgba(255,255,255,0.1);white-space:pre}
 #meta{bottom:4px;left:4px}
 #perf{bottom:26px;left:4px}
@@ -8,7 +8,7 @@ canvas{display:block;width:100%;height:100%;}
 #report{top:40%;left:50%;transform:translate(-50%,-50%);text-align:center}
 #shaderEdit{position:absolute;bottom:40px;left:4px;width:50%;height:30%;z-index:1000;background:#000;color:#0f0;font-family:monospace}
 #glitchBtn{position:absolute;top:4px;left:120px;z-index:999}
-#crosshair{position:absolute;top:50%;left:50%;width:20px;height:20px;margin:-10px 0 0 -10px;pointer-events:none;color:#faffff}
+#crosshair{position:absolute;top:50%;left:50%;width:20px;height:20px;margin:-10px 0 0 -10px;pointer-events:none;color:#faffff;z-index:1}
 #crosshair:before,#crosshair:after{content:'';position:absolute;background:currentColor}
 #crosshair:before{left:50%;top:0;width:2px;height:100%;margin-left:-1px}
 #crosshair:after{top:50%;left:0;width:100%;height:2px;margin-top:-1px}
