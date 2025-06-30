@@ -1,8 +1,8 @@
 import {
-	Euler,
-	EventDispatcher,
-	Vector3
-} from 'three';
+       Euler,
+       EventDispatcher,
+       Vector3
+} from './three.module.js';
 
 const _euler = new Euler( 0, 0, 0, 'YXZ' );
 const _vector = new Vector3();
