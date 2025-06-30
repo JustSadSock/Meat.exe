@@ -59,6 +59,13 @@ function init(){
   loadedChunks['0,0']=level;
   loadedCells['0,0']=generateOrgan(0,0);
 
+  // spawn player at the center of the first generated cell so we are not stuck
+  const first = loadedCells['0,0'][0];
+  if(first){
+    camera.position.x = first.x + 0.5;
+    camera.position.z = first.y + 0.5;
+  }
+
   const boxGeo = new THREE.BoxGeometry(0.5,0.5,0.5);
   const boxMat = new THREE.MeshNormalMaterial();
   for(let i=0;i<5;i++){
