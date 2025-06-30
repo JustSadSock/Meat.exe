@@ -4,6 +4,8 @@ import { generateTunnelMesh, setSeed } from './organGen.js';
 
 let camera, scene, renderer, controls;
 let enemies = [];
+let light;
+let organMat;
 let raycaster;
 let crosshair;
 let lastShot = 0;
@@ -21,6 +23,9 @@ function init(){
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x050505);
+  light = new THREE.PointLight(0xff4444, 2, 10);
+  light.position.set(0,2,0);
+  scene.add(light);
   setSeed(0);
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
@@ -30,6 +35,8 @@ function init(){
   canvas.addEventListener('click', () => controls.lock());
 
   level = generateTunnelMesh(0,0,THREE);
+  organMat = level.userData.materials.floor;
+  level.traverse(obj=>{if(obj.isMesh) obj.material=organMat;});
   scene.add(level);
 
   const boxGeo = new THREE.BoxGeometry(0.5,0.5,0.5);
@@ -53,6 +60,16 @@ function onResize(){
 function animate(){
   requestAnimationFrame(animate);
   controls.update();
+  const t=performance.now()*0.001;
+  const p=0.5+Math.sin(t*2)*0.5;
+  if(organMat){
+    organMat.emissiveIntensity=0.5+p*0.5;
+    organMat.color.setHSL(0,1,0.3+0.2*p);
+  }
+  if(light){
+    light.intensity=2+p;
+    light.position.copy(camera.position);
+  }
   raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
   const hits = raycaster.intersectObjects(enemies);
   if(hits.length>0){

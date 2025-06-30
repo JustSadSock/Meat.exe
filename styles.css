@@ -1,8 +1,6 @@
 html,body{width:100vw;height:100vh;margin:0;overflow:hidden;touch-action:none;background:#050505;background:radial-gradient(circle,#0a0015,#050505);color:#faffff;font-family:monospace}
 canvas{display:block;width:100%;height:100%;}
 .panel{position:absolute;padding:4px 8px;background:rgba(0,0,0,0.3);backdrop-filter:blur(6px);text-shadow:0 0 6px currentColor;border:1px solid rgba(255,255,255,0.1)}
-#hp{top:4px;left:4px}
-#ammo{top:4px;right:4px}
 #meta{bottom:4px;left:4px}
 #perf{bottom:26px;left:4px}
 #perf input{width:80px}
