@@ -55,14 +55,9 @@ function mulberry32(a){
 
 function edgeOpen(cx,cy,dir){
   // dir:0=N,1=E,2=S,3=W
-  let ax=cx,ay=cy,bx=cx,by=cy;
-  if(dir===0) ay--;
-  else if(dir===1) bx++;
-  else if(dir===2) by++;
-  else if(dir===3) ax--;
-  let h=ax*73856093^ay*19349663^bx*83492791^by*1640531513^worldSeed;
-  h=Math.imul(h^h>>>13,1274126177);
-  return (h>>>15)&1;
+  // previously edge openings were random which could isolate rooms. always open
+  // all edges so chunks seamlessly connect with corridors
+  return 1;
 }
 
 function listFirst(set){
