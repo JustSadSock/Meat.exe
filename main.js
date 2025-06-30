@@ -89,7 +89,8 @@ const ENEMY_R=0.03;
 const BULLET_R=0.015;
 let chunkX=0,chunkY=0;
 const loadedChunks={};
-loadedChunks['0,0']=generateOrgan(0,0).map(t=>AABB(t.x*CHUNK_SIZE,t.y*CHUNK_SIZE,CHUNK_SIZE,CHUNK_SIZE));
+const firstCells=generateOrgan(0,0);
+loadedChunks['0,0']=firstCells.map(t=>AABB(t.x*CHUNK_SIZE,t.y*CHUNK_SIZE,CHUNK_SIZE,CHUNK_SIZE));
 
 const enemyTypes={
   normal:{speed:0.1,hp:10},
@@ -100,7 +101,12 @@ const enemyTypes={
   hashHeart:{speed:0.05,hp:100,boss:true}
 };
 
-const player={x:0.5,y:0.5,vx:0,vy:0,hp:100};
+let spawn={x:0.5,y:0.5};
+if(firstCells.length>0){
+  const c=firstCells[Math.floor(firstCells.length*Math.random())];
+  spawn={x:(c.x+0.5)*CHUNK_SIZE,y:(c.y+0.5)*CHUNK_SIZE};
+}
+const player={x:spawn.x,y:spawn.y,vx:0,vy:0,hp:100};
 bindPlayer(player);
 let sprint=false;
 let slideTimer=0;
@@ -266,6 +272,22 @@ function loop(ts){
   }
   const allBoxes=[];
   for(const k in loadedChunks) allBoxes.push(...loadedChunks[k]);
+  const playerCirc={x:player.x,y:player.y,r:PLAYER_R};
+  let insideP=false;
+  for(const b of allBoxes){if(circleInsideAABB(playerCirc,b)){insideP=true;break;}}
+  if(!insideP){
+    let near=null,best=1e9;
+    for(const box of allBoxes){
+      const cx=Math.max(box.x,Math.min(player.x,box.x+box.w));
+      const cy=Math.max(box.y,Math.min(player.y,box.y+box.h));
+      const d=(player.x-cx)*(player.x-cx)+(player.y-cy)*(player.y-cy);
+      if(d<best){best=d;near=box;}
+    }
+    if(near){
+      clampCircleToAABB(playerCirc,near);
+      player.x=playerCirc.x;player.y=playerCirc.y;
+    }
+  }
   enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*e.speed*dt;e.y+=dy/l*e.speed*dt;e.life-=dt;
     const circ={x:e.x,y:e.y,r:ENEMY_R};
     let inside=false;
