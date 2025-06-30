@@ -99,7 +99,6 @@ function onKeyUp(e){
 
 function animate(){
   requestAnimationFrame(animate);
-  controls.update();
   const time=performance.now();
   const delta=(time-prevTime)/1000;
   prevTime=time;
