@@ -38,23 +38,65 @@ class SimplexNoise{
 }
 
 let simplex=new SimplexNoise(0);
+let worldSeed=0;
 export function setSeed(s){
   simplex=new SimplexNoise(s);
+  worldSeed=s>>>0;
+}
+
+function mulberry32(a){
+  return function(){
+    let t=a+=0x6D2B79F5;
+    t=Math.imul(t^t>>>15,t|1);
+    t^=t+Math.imul(t^t>>>7,t|61);
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+
+function edgeOpen(cx,cy,dir){
+  // dir:0=N,1=E,2=S,3=W
+  let ax=cx,ay=cy,bx=cx,by=cy;
+  if(dir===0) ay--;
+  else if(dir===1) bx++;
+  else if(dir===2) by++;
+  else if(dir===3) ax--;
+  let h=ax*73856093^ay*19349663^bx*83492791^by*1640531513^worldSeed;
+  h=Math.imul(h^h>>>13,1274126177);
+  return (h>>>15)&1;
+}
+
+function listFirst(set){
+  for(const v of set) return v;
+  return null;
 }
 
 export function generateOrgan(cx,cy){
   const cells=[];
+  const cellSet=new Set();
   const SIZE=8; // cells per chunk side
   const baseX=cx*SIZE;
   const baseY=cy*SIZE;
-  for(let y=0;y<SIZE;y++){
-    for(let x=0;x<SIZE;x++){
-      const gx=baseX+x;
-      const gy=baseY+y;
-      const n1=simplex.noise2D(gx*0.05,gy*0.05);
-      const n2=simplex.noise2D(gx*0.15+100,gy*0.15+100);
-      if(n1>0.2||n2>0.5){
-        cells.push({x:gx,y:gy});
+  const rnd=mulberry32((cx*73856093^cy*19349663^worldSeed)>>>0);
+  const roomCount=1+Math.floor(rnd()*2);
+  const dig=(lx,ly)=>{const key=lx+','+ly;if(!cellSet.has(key)){cellSet.add(key);cells.push({x:baseX+lx,y:baseY+ly});}};
+  for(let i=0;i<roomCount;i++){
+    const w=3+Math.floor(rnd()*3);
+    const h=3+Math.floor(rnd()*3);
+    const rx=Math.floor(rnd()*(SIZE-w));
+    const ry=Math.floor(rnd()*(SIZE-h));
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++)dig(rx+x,ry+y);
+  }
+  // connect to edges
+  const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
+  const room=listFirst(cellSet);
+  const [cxr,cyr]=room?room.split(',').map(Number):[Math.floor(SIZE/2),Math.floor(SIZE/2)];
+  for(let i=0;i<4;i++){
+    if(edgeOpen(cx,cy,i)){
+      let x=cxr,y=cyr;
+      while(x>=0&&x<SIZE&&y>=0&&y<SIZE){
+        dig(x,y);
+        x+=dirs[i][0];
+        y+=dirs[i][1];
       }
     }
   }
