@@ -28,9 +28,15 @@ document.addEventListener('mousemove',e=>{
   cross.style.top=cy+'px';
 });
 
+const CHUNK_SIZE=0.25;
+let chunkX=0,chunkY=0;
+const loadedChunks={};
+loadedChunks['0,0']=generateOrgan(0,0);
+
 const player={x:0.5,y:0.5,hp:100};
 let bullets=[],enemies=[],wave=7,difficulty=1,kills=0;
 let elapsed=0;
+const keys={};
 const hpVal=document.getElementById('hpVal');
 const fpsEl=document.getElementById('fps');
 
@@ -72,6 +78,24 @@ function loop(ts){
   last = ts;
   elapsed += dt;
   if(dev) fpsEl.textContent = Math.round(1/dt)+" FPS";
+  // simple player movement
+  const speed=0.3;
+  if(keys['w']) player.y-=speed*dt;
+  if(keys['s']) player.y+=speed*dt;
+  if(keys['a']) player.x-=speed*dt;
+  if(keys['d']) player.x+=speed*dt;
+  player.x=Math.max(0,Math.min(1,player.x));
+  player.y=Math.max(0,Math.min(1,player.y));
+  const cxx=Math.floor(player.x/CHUNK_SIZE);
+  const cyy=Math.floor(player.y/CHUNK_SIZE);
+  if(cxx!==chunkX||cyy!==chunkY){
+    chunkX=cxx;chunkY=cyy;
+    const key=cxx+','+cyy;
+    if(!loadedChunks[key]){
+      loadedChunks[key]=generateOrgan(cxx,cyy);
+      console.log('generate',key,loadedChunks[key]);
+    }
+  }
   bullets.forEach(b=>{b.x+=b.dx*dt;b.y+=b.dy*dt;b.life-=dt;});
   bullets=bullets.filter(b=>b.life>0&&b.x>-0.1&&b.x<1.1&&b.y>-0.1&&b.y<1.1);
   enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*0.1*dt;e.y+=dy/l*0.1*dt;});
@@ -114,5 +138,7 @@ requestAnimationFrame(loop);
 
 window.addEventListener('resize', ()=>initEngine(gl, canvas, dev));
 window.addEventListener('keydown', e=>{
+  keys[e.key]=true;
   if(e.key==='m') mutateRules();
 });
+window.addEventListener('keyup', e=>{keys[e.key]=false;});
