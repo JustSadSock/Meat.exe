@@ -1,6 +1,6 @@
 import { initEngine, renderFrame, setGlitch, kickFov } from './engine.js';
 import { generateOrgan } from './organGen.js';
-import { guns, reloadShader, initGuns } from './shaderGuns.js';
+import { guns, reloadShader, initGuns, addFragment, getBestFragment, applyFragment, fragmentInventory } from './shaderGuns.js';
 import { updateBlood, spawnBlood, getBlood } from './goreSim.js';
 import { initMeta, mutateRules, getRules } from './metaMutate.js';
 import { AABB, circleVsCircle, circleInsideAABB, clampCircleToAABB } from './geom.js';
@@ -81,11 +81,18 @@ let sprint=false;
 let slideTimer=0;
 let hook=null;
 let bullets=[],enemies=[],wave=7,difficulty=1,kills=0;
+let fragItems=[];
+const fragmentPool=[
+  'outColor.rgb*=vec3(gl_PointCoord.x,gl_PointCoord.y,1.0);',
+  'outColor=mix(outColor,vec4(1.0,0.5,0.0,1.0),gl_PointCoord.x);',
+  'outColor.a*=step(0.25,gl_PointCoord.x)*step(0.25,gl_PointCoord.y);'
+];
 let elapsed=0;
 let currentGun=0;
 let shootTimer=0;
 const keys={};
 const hpVal=document.getElementById('hpVal');
+const ammoVal=document.getElementById('ammoVal');
 const fpsEl=document.getElementById('fps');
 
 function fire(){
@@ -217,7 +224,12 @@ function loop(ts){
     if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:bullets[i].r},{x:enemies[j].x,y:enemies[j].y,r:ENEMY_R})){
       spawnBlood(enemies[j].x,enemies[j].y);
       rocketKnockback(bullets[i].x,bullets[i].y);
-      if(!enemies[j].immortal){enemies.splice(j,1);kills++;}
+      if(!enemies[j].immortal){
+        if(Math.random()<0.3){
+          const code=fragmentPool[Math.floor(Math.random()*fragmentPool.length)];
+          fragItems.push({x:enemies[j].x,y:enemies[j].y,code});
+        }
+        enemies.splice(j,1);kills++;}
       bullets.splice(i,1);
       break;
     }
@@ -227,7 +239,14 @@ function loop(ts){
       player.hp-=10;spawnBlood(player.x,player.y);enemies.splice(i,1);
     }
   }
+  for(let i=fragItems.length-1;i>=0;i--){
+    if(circleVsCircle({x:player.x,y:player.y,r:PLAYER_R},{x:fragItems[i].x,y:fragItems[i].y,r:0.02})){
+      addFragment(fragItems[i].code);
+      fragItems.splice(i,1);
+    }
+  }
   hpVal.textContent=Math.max(0,player.hp);
+  ammoVal.textContent=fragmentInventory.length;
   if(player.hp<=0){
     mutateRules();
     player.hp=100;difficulty=1;kills=0;
@@ -248,7 +267,8 @@ function loop(ts){
   const rb=bullets.map(b=>({x:b.x-offX,y:b.y-offY}));
   const re=enemies.map(e=>({x:e.x-offX,y:e.y-offY}));
   const bl=getBlood().map(b=>({x:b.x-offX,y:b.y-offY}));
-  renderFrame(dt,rb,re,bl,guns[currentGun].size);
+  const fi=fragItems.map(f=>({x:f.x-offX,y:f.y-offY}));
+  renderFrame(dt,rb,re,bl,fi,guns[currentGun].size);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
@@ -270,6 +290,10 @@ window.addEventListener('keydown', e=>{
     if(hasTouch){dx=aimJoy.x;dy=aimJoy.y;}else{dx=cx/window.innerWidth-0.5;dy=cy/window.innerHeight-0.5;}
     const l=Math.hypot(dx,dy)||1;
     hook={dx:dx/l,dy:dy/l,time:0.4};
+  }
+  if(k==='e'){
+    const best=getBestFragment();
+    if(best) applyFragment(best,0);
   }
 });
 window.addEventListener('keyup', e=>{

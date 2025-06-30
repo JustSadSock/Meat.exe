@@ -58,7 +58,7 @@ function drawPoints(arr,color,size){
   gl.drawArrays(gl.POINTS,0,arr.length);
 }
 
-export function renderFrame(dt,bullets,enemies,blood,bulletSize){
+export function renderFrame(dt,bullets,enemies,blood,items,bulletSize){
   if(glitch){
     glitchTime-=dt;
     if(glitchTime<=0) glitch=false;
@@ -71,6 +71,7 @@ export function renderFrame(dt,bullets,enemies,blood,bulletSize){
   gl.clear(gl.COLOR_BUFFER_BIT);
   drawPoints(enemies,[0,1,0],16.0);
   drawPoints(bullets,[1,0,0.3],bulletSize);
+  drawPoints(items,[0,0.8,1.0],8.0);
   drawPoints(blood,[0.8,0,0],4.0);
 }
 

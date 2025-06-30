@@ -1,5 +1,37 @@
 let gl;
 
+// collected GLSL fragments stored in inventory slots
+export let fragmentInventory = [];
+
+function loadFragments(){
+  const saved = localStorage.getItem('glslFragments');
+  if(saved) fragmentInventory = JSON.parse(saved);
+}
+
+function saveFragments(){
+  localStorage.setItem('glslFragments', JSON.stringify(fragmentInventory));
+}
+
+export function addFragment(code){
+  let f = fragmentInventory.find(fr=>fr.code===code);
+  if(f) f.lvl++;
+  else fragmentInventory.push({code,lvl:1});
+  saveFragments();
+}
+
+export function getBestFragment(){
+  if(fragmentInventory.length===0) return null;
+  return fragmentInventory.slice().sort((a,b)=>b.lvl-a.lvl)[0];
+}
+
+export function applyFragment(fragment,index=0){
+  if(!fragment) return;
+  const gun=guns[index];
+  const src=gun.baseSrc.replace(/}\s*$/m,`\n${fragment.code}\n}`);
+  gun.lvl=fragment.lvl;
+  reloadShader(src,index);
+}
+
 export let guns=[
   {
     name:'Pew',
@@ -50,7 +82,8 @@ void main(){
 
 export function initGuns(glCtx){
   gl=glCtx;
-  guns.forEach(g=>compileGun(g));
+  guns.forEach(g=>{g.baseSrc=g.fragSrc;compileGun(g);});
+  loadFragments();
 }
 
 function compileGun(g){
