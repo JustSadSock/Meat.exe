@@ -4,11 +4,12 @@ function noise(x,y){
 }
 
 export function generateOrgan(cx,cy){
-  // Placeholder: возвращает массив комнат
-  const seed = noise(cx,cy)*1000;
-  let rooms=[];
-  for(let i=0;i<8;i++){
-    rooms.push({x:cx+i*4+noise(seed,i)*2,y:cy+i*3});
-  }
-  return rooms;
+  const templates=[
+    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:2,y:1}],
+    [{x:0,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1}],
+    [{x:1,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1}],
+    [{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:1,y:2}]
+  ];
+  const seed=Math.floor(noise(cx,cy)*templates.length);
+  return templates[seed].map(r=>({x:cx+r.x,y:cy+r.y}));
 }
