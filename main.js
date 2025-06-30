@@ -14,6 +14,11 @@ initEngine(gl, canvas, dev);
 initMeta();
 initGuns(gl);
 
+// Prevent text selection and system gestures
+document.addEventListener('selectstart',e=>e.preventDefault());
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('dblclick',e=>e.preventDefault());
+
 const cross=document.getElementById('crosshair');
 const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 const joyL=document.getElementById('joyL');
