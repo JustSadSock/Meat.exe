@@ -10,6 +10,12 @@ let raycaster;
 let crosshair;
 let lastShot = 0;
 let level;
+let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false;
+let velocity=3;
+let prevTime=performance.now();
+const CHUNK_SIZE=8;
+const loadedChunks={};
+let chunkX=0,chunkZ=0;
 
 init();
 animate();
@@ -43,6 +49,7 @@ function init(){
   organMat = level.userData.materials.floor;
   level.traverse(obj=>{if(obj.isMesh) obj.material=organMat;});
   scene.add(level);
+  loadedChunks['0,0']=level;
 
   const boxGeo = new THREE.BoxGeometry(0.5,0.5,0.5);
   const boxMat = new THREE.MeshNormalMaterial();
@@ -54,6 +61,8 @@ function init(){
   }
 
   window.addEventListener('resize', onResize);
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keyup', onKeyUp);
 }
 
 function onResize(){
@@ -62,10 +71,55 @@ function onResize(){
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+function onKeyDown(e){
+  switch(e.code){
+    case 'KeyW':
+    case 'ArrowUp': moveForward=true; break;
+    case 'KeyS':
+    case 'ArrowDown': moveBackward=true; break;
+    case 'KeyA':
+    case 'ArrowLeft': moveLeft=true; break;
+    case 'KeyD':
+    case 'ArrowRight': moveRight=true; break;
+  }
+}
+
+function onKeyUp(e){
+  switch(e.code){
+    case 'KeyW':
+    case 'ArrowUp': moveForward=false; break;
+    case 'KeyS':
+    case 'ArrowDown': moveBackward=false; break;
+    case 'KeyA':
+    case 'ArrowLeft': moveLeft=false; break;
+    case 'KeyD':
+    case 'ArrowRight': moveRight=false; break;
+  }
+}
+
 function animate(){
   requestAnimationFrame(animate);
-  // controls.update();
-  const t=performance.now()*0.001;
+  controls.update();
+  const time=performance.now();
+  const delta=(time-prevTime)/1000;
+  prevTime=time;
+  if(moveForward) controls.moveForward(velocity*delta);
+  if(moveBackward) controls.moveForward(-velocity*delta);
+  if(moveLeft) controls.moveRight(-velocity*delta);
+  if(moveRight) controls.moveRight(velocity*delta);
+  const cxi=Math.floor(camera.position.x/CHUNK_SIZE);
+  const czi=Math.floor(camera.position.z/CHUNK_SIZE);
+  if(cxi!==chunkX||czi!==chunkZ){
+    chunkX=cxi;chunkZ=czi;
+    const key=cxi+','+czi;
+    if(!loadedChunks[key]){
+      const mesh=generateTunnelMesh(cxi,czi,THREE);
+      mesh.traverse(obj=>{if(obj.isMesh) obj.material=organMat;});
+      scene.add(mesh);
+      loadedChunks[key]=mesh;
+    }
+  }
+  const t=time*0.001;
   const p=0.5+Math.sin(t*2)*0.5;
   if(organMat){
     organMat.emissiveIntensity=0.5+p*0.5;
