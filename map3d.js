@@ -64,7 +64,7 @@ function onResize(){
 
 function animate(){
   requestAnimationFrame(animate);
-  controls.update();
+  // controls.update();
   const t=performance.now()*0.001;
   const p=0.5+Math.sin(t*2)*0.5;
   if(organMat){
