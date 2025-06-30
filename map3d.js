@@ -1,6 +1,7 @@
 import * as THREE from './three.module.js';
 import { PointerLockControls } from './PointerLockControls.js';
-import { generateTunnelMesh, setSeed } from './organGen.js';
+import { generateTunnelMesh, generateOrgan, setSeed } from './organGen.js';
+import { AABB, circleInsideAABB, clampCircleToAABB } from './geom.js';
 
 const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 const moveJoy = window.moveJoy || {x:0,y:0};
@@ -19,6 +20,8 @@ let velocity=3;
 let prevTime=performance.now();
 const CHUNK_SIZE=8;
 const loadedChunks={};
+const loadedCells={};
+const PLAYER_R=0.2;
 let chunkX=0,chunkZ=0;
 
 init();
@@ -54,6 +57,7 @@ function init(){
   level.traverse(obj=>{if(obj.isMesh) obj.material=organMat;});
   scene.add(level);
   loadedChunks['0,0']=level;
+  loadedCells['0,0']=generateOrgan(0,0);
 
   const boxGeo = new THREE.BoxGeometry(0.5,0.5,0.5);
   const boxMat = new THREE.MeshNormalMaterial();
@@ -121,6 +125,30 @@ function animate(){
   if(moveBackward) controls.moveForward(-velocity*delta);
   if(moveLeft) controls.moveRight(-velocity*delta);
   if(moveRight) controls.moveRight(velocity*delta);
+
+  // collision detection
+  const player={x:camera.position.x,y:camera.position.z,r:PLAYER_R};
+  const allBoxes=[];
+  for(const k in loadedCells){
+    const cells=loadedCells[k];
+    for(const c of cells) allBoxes.push(AABB(c.x,c.y,1,1));
+  }
+  let inside=false;
+  for(const box of allBoxes){if(circleInsideAABB(player,box)){inside=true;break;}}
+  if(!inside){
+    let near=null,best=1e9;
+    for(const box of allBoxes){
+      const cx=Math.max(box.x,Math.min(player.x,box.x+box.w));
+      const cy=Math.max(box.y,Math.min(player.y,box.y+box.h));
+      const d=(player.x-cx)*(player.x-cx)+(player.y-cy)*(player.y-cy);
+      if(d<best){best=d;near=box;}
+    }
+    if(near){
+      clampCircleToAABB(player,near);
+      camera.position.x=player.x;
+      camera.position.z=player.y;
+    }
+  }
   const cxi=Math.floor(camera.position.x/CHUNK_SIZE);
   const czi=Math.floor(camera.position.z/CHUNK_SIZE);
   if(cxi!==chunkX||czi!==chunkZ){
@@ -131,6 +159,7 @@ function animate(){
       mesh.traverse(obj=>{if(obj.isMesh) obj.material=organMat;});
       scene.add(mesh);
       loadedChunks[key]=mesh;
+      loadedCells[key]=generateOrgan(cxi,czi);
     }
   }
   const t=time*0.001;

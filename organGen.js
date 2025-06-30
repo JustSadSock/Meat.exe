@@ -87,14 +87,14 @@ export function generateOrgan(cx,cy){
     while(y!==b.y){y+=Math.sign(b.y-y);dig(x,y);}
   };
   for(let i=0;i<roomCount;i++){
-    const w=3+Math.floor(rnd()*3);
-    const h=3+Math.floor(rnd()*3);
+    const w=5+Math.floor(rnd()*3);
+    const h=5+Math.floor(rnd()*3);
     const rx=Math.floor(rnd()*(SIZE-w));
     const ry=Math.floor(rnd()*(SIZE-h));
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)dig(rx+x,ry+y);
     const center={x:rx+(w>>1),y:ry+(h>>1)};
+    centers.forEach(c=>connect(c,center));
     centers.push(center);
-    if(prevCenter) connect(prevCenter,center);
     prevCenter=center;
   }
   // connect to edges
