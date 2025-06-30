@@ -351,7 +351,13 @@ function loop(ts){
   const re=enemies.map(e=>({x:e.x-offX,y:e.y-offY}));
   const bl=getBlood().map(b=>({x:b.x-offX,y:b.y-offY}));
   const fi=fragItems.map(f=>({x:f.x-offX,y:f.y-offY}));
-  renderFrame(dt,rb,re,bl,fi,guns[currentGun].size);
+  const mapCells=[];
+  for(const k in loadedChunks){
+    for(const c of loadedChunks[k]){
+      mapCells.push({x:c.x+c.w*0.5-offX,y:c.y+c.h*0.5-offY});
+    }
+  }
+  renderFrame(dt,rb,re,bl,fi,mapCells,guns[currentGun].size,CHUNK_SIZE);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
