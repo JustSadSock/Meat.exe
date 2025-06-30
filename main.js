@@ -3,6 +3,7 @@ import { generateOrgan } from './organGen.js';
 import { guns, reloadShader } from './shaderGuns.js';
 import { updateBlood, spawnBlood, getBlood } from './goreSim.js';
 import { initMeta, mutateRules, getRules } from './metaMutate.js';
+import { AABB, circleVsCircle, circleInsideAABB, clampCircleToAABB } from './geom.js';
 
 const dev = new URLSearchParams(location.search).get('dev') === '1';
 const canvas = document.getElementById('gl');
@@ -67,9 +68,12 @@ else {
 }
 
 const CHUNK_SIZE=0.25;
+const PLAYER_R=0.03;
+const ENEMY_R=0.03;
+const BULLET_R=0.015;
 let chunkX=0,chunkY=0;
 const loadedChunks={};
-loadedChunks['0,0']=generateOrgan(0,0);
+loadedChunks['0,0']=generateOrgan(0,0).map(t=>AABB(t.x*CHUNK_SIZE,t.y*CHUNK_SIZE,CHUNK_SIZE,CHUNK_SIZE));
 
 const player={x:0.5,y:0.5,vx:0,vy:0,hp:100};
 let bullets=[],enemies=[],wave=7,difficulty=1,kills=0;
@@ -142,16 +146,35 @@ function loop(ts){
     chunkX=cxx;chunkY=cyy;
     const key=cxx+','+cyy;
     if(!loadedChunks[key]){
-      loadedChunks[key]=generateOrgan(cxx,cyy);
-      console.log('generate',key,loadedChunks[key]);
+      const cells=generateOrgan(cxx,cyy).map(t=>AABB(t.x*CHUNK_SIZE,t.y*CHUNK_SIZE,CHUNK_SIZE,CHUNK_SIZE));
+      loadedChunks[key]=cells;
+      console.log('generate',key,cells);
     }
   }
   bullets.forEach(b=>{b.x+=b.dx*dt;b.y+=b.dy*dt;b.life-=dt;});
   bullets=bullets.filter(b=>b.life>0&&Math.abs(b.x-player.x)<1&&Math.abs(b.y-player.y)<1);
-  enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*0.1*dt;e.y+=dy/l*0.1*dt;});
+  const allBoxes=[];
+  for(const k in loadedChunks) allBoxes.push(...loadedChunks[k]);
+  enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*0.1*dt;e.y+=dy/l*0.1*dt;
+    const circ={x:e.x,y:e.y,r:ENEMY_R};
+    let inside=false;
+    for(const box of allBoxes){if(circleInsideAABB(circ,box)){inside=true;break;}}
+    if(!inside){
+      let near=null,best=1e9;
+      for(const box of allBoxes){
+        const cx=Math.max(box.x,Math.min(e.x,box.x+box.w));
+        const cy=Math.max(box.y,Math.min(e.y,box.y+box.h));
+        const d=(e.x-cx)*(e.x-cx)+(e.y-cy)*(e.y-cy);
+        if(d<best){best=d;near=box;}
+      }
+      if(near){
+        clampCircleToAABB(circ,near);
+        e.x=circ.x;e.y=circ.y;
+      }
+    }
+  });
   for(let i=bullets.length-1;i>=0;i--)for(let j=enemies.length-1;j>=0;j--){
-    const dx=bullets[i].x-enemies[j].x,dy=bullets[i].y-enemies[j].y;
-    if(Math.hypot(dx,dy)<0.03){
+    if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:BULLET_R},{x:enemies[j].x,y:enemies[j].y,r:ENEMY_R})){
       spawnBlood(enemies[j].x,enemies[j].y);
       if(!enemies[j].immortal){enemies.splice(j,1);kills++;}
       bullets.splice(i,1);
@@ -159,8 +182,7 @@ function loop(ts){
     }
   }
   for(let i=enemies.length-1;i>=0;i--){
-    const dx=player.x-enemies[i].x,dy=player.y-enemies[i].y;
-    if(Math.hypot(dx,dy)<0.03){
+    if(circleVsCircle({x:player.x,y:player.y,r:PLAYER_R},{x:enemies[i].x,y:enemies[i].y,r:ENEMY_R})){
       player.hp-=10;spawnBlood(player.x,player.y);enemies.splice(i,1);
     }
   }
