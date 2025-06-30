@@ -1,6 +1,6 @@
 import { initEngine, renderFrame, setGlitch, kickFov } from './engine.js';
 import { generateOrgan } from './organGen.js';
-import { guns, reloadShader } from './shaderGuns.js';
+import { guns, reloadShader, initGuns } from './shaderGuns.js';
 import { updateBlood, spawnBlood, getBlood } from './goreSim.js';
 import { initMeta, mutateRules, getRules } from './metaMutate.js';
 import { AABB, circleVsCircle, circleInsideAABB, clampCircleToAABB } from './geom.js';
@@ -11,6 +11,7 @@ const gl = canvas.getContext('webgl2');
 
 initEngine(gl, canvas, dev);
 initMeta();
+initGuns(gl);
 
 const cross=document.getElementById('crosshair');
 const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
@@ -78,11 +79,14 @@ loadedChunks['0,0']=generateOrgan(0,0).map(t=>AABB(t.x*CHUNK_SIZE,t.y*CHUNK_SIZE
 const player={x:0.5,y:0.5,vx:0,vy:0,hp:100};
 let bullets=[],enemies=[],wave=7,difficulty=1,kills=0;
 let elapsed=0;
+let currentGun=0;
+let shootTimer=0;
 const keys={};
 const hpVal=document.getElementById('hpVal');
 const fpsEl=document.getElementById('fps');
 
 function fire(){
+  if(shootTimer>0) return;
   let dx,dy;
   if(hasTouch){
     dx=aimJoy.x;dy=aimJoy.y;
@@ -91,7 +95,9 @@ function fire(){
     dy=cy/window.innerHeight-0.5;
   }
   const l=Math.hypot(dx,dy)||1;
-  bullets.push({x:player.x,y:player.y,dx:dx/l*0.6,dy:dy/l*0.6,life:2});
+  const gun=guns[currentGun];
+  bullets.push({x:player.x,y:player.y,dx:dx/l*0.6,dy:dy/l*0.6,life:2,size:gun.size,r:BULLET_R*gun.lvl});
+  shootTimer=gun.cooldown;
   setGlitch(true);
   kickFov(0.2);
 }
@@ -124,6 +130,7 @@ function loop(ts){
   const dt = (ts - last)/1000;
   last = ts;
   elapsed += dt;
+  shootTimer=Math.max(0,shootTimer-dt);
   if(dev) fpsEl.textContent = Math.round(1/dt)+" FPS";
   // movement with friction + gravity
   const rules=getRules();
@@ -174,7 +181,7 @@ function loop(ts){
     }
   });
   for(let i=bullets.length-1;i>=0;i--)for(let j=enemies.length-1;j>=0;j--){
-    if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:BULLET_R},{x:enemies[j].x,y:enemies[j].y,r:ENEMY_R})){
+    if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:bullets[i].r},{x:enemies[j].x,y:enemies[j].y,r:ENEMY_R})){
       spawnBlood(enemies[j].x,enemies[j].y);
       if(!enemies[j].immortal){enemies.splice(j,1);kills++;}
       bullets.splice(i,1);
@@ -207,7 +214,7 @@ function loop(ts){
   const rb=bullets.map(b=>({x:b.x-offX,y:b.y-offY}));
   const re=enemies.map(e=>({x:e.x-offX,y:e.y-offY}));
   const bl=getBlood().map(b=>({x:b.x-offX,y:b.y-offY}));
-  renderFrame(dt,rb,re,bl);
+  renderFrame(dt,rb,re,bl,guns[currentGun].size);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
