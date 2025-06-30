@@ -92,19 +92,18 @@ export function generateOrgan(cx,cy){
     centers.push(center);
     prevCenter=center;
   }
-  // connect to edges
-  const central={x:Math.floor(SIZE/2),y:Math.floor(SIZE/2)};
-  dig(central.x,central.y);
-  centers.forEach(c=>connect(c,central));
+  // connect to edges using nearest room center for a more maze-like feel
   const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
   for(let i=0;i<4;i++){
     if(edgeOpen(cx,cy,i)){
-      let x=central.x,y=central.y;
-      while(x>=0&&x<SIZE&&y>=0&&y<SIZE){
-        dig(x,y);
-        x+=dirs[i][0];
-        y+=dirs[i][1];
+      const ex = i===1?SIZE-1:i===3?0:Math.floor(rnd()*SIZE);
+      const ey = i===0?0:i===2?SIZE-1:Math.floor(rnd()*SIZE);
+      let best=centers[0],bestDist=Infinity;
+      for(const c of centers){
+        const d=Math.abs(c.x-ex)+Math.abs(c.y-ey);
+        if(d<bestDist){bestDist=d;best=c;}
       }
+      connect(best,{x:ex,y:ey});
     }
   }
   return cells;

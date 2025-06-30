@@ -145,7 +145,9 @@ function animate(){
   const allBoxes=[];
   for(const k in loadedCells){
     const cells=loadedCells[k];
-    for(const c of cells) allBoxes.push(AABB(c.x,c.y,1,1));
+    for(const c of cells) {
+      allBoxes.push(AABB(c.x-PLAYER_R, c.y-PLAYER_R, 1+PLAYER_R*2, 1+PLAYER_R*2));
+    }
   }
   let inside=false;
   for(const box of allBoxes){if(circleInsideAABB(player,box)){inside=true;break;}}
