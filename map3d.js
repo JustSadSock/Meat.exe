@@ -2,6 +2,10 @@ import * as THREE from './three.module.js';
 import { PointerLockControls } from './PointerLockControls.js';
 import { generateTunnelMesh, setSeed } from './organGen.js';
 
+const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
+const moveJoy = window.moveJoy || {x:0,y:0};
+const aimJoy = window.aimJoy || {x:0,y:0};
+
 let camera, scene, renderer, controls;
 let enemies = [];
 let light;
@@ -102,6 +106,17 @@ function animate(){
   const time=performance.now();
   const delta=(time-prevTime)/1000;
   prevTime=time;
+  if(hasTouch){
+    const rotSpeed=2.5;
+    const euler=new THREE.Euler(0,0,0,'YXZ');
+    euler.setFromQuaternion(camera.quaternion);
+    euler.y-=aimJoy.x*rotSpeed*delta;
+    euler.x-=aimJoy.y*rotSpeed*delta;
+    euler.x=Math.max(-Math.PI/2,Math.min(Math.PI/2,euler.x));
+    camera.quaternion.setFromEuler(euler);
+    controls.moveForward(-moveJoy.y*velocity*delta);
+    controls.moveRight(moveJoy.x*velocity*delta);
+  }
   if(moveForward) controls.moveForward(velocity*delta);
   if(moveBackward) controls.moveForward(-velocity*delta);
   if(moveLeft) controls.moveRight(-velocity*delta);

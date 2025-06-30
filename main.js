@@ -21,6 +21,8 @@ const joyR=document.getElementById('joyR');
 const joyLInner=joyL.querySelector('.inner');
 const joyRInner=joyR.querySelector('.inner');
 let moveJoy={x:0,y:0},aimJoy={x:0,y:0};
+window.moveJoy = moveJoy;
+window.aimJoy = aimJoy;
 const JOY_CROSS_RANGE=60;
 if(hasTouch){
   cross.style.display='block';
