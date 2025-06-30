@@ -43,41 +43,50 @@ export function setSeed(s){
 }
 
 export function generateOrgan(cx,cy){
-  const t=[
-    // простые кишки и развилки
-    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:3,y:0}],
-    [{x:0,y:0},{x:0,y:1},{x:0,y:2},{x:1,y:2}],
-    [{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:2,y:1}],
-    [{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:2,y:0}],
-    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:1,y:1}],
-    [{x:1,y:0},{x:2,y:0},{x:2,y:1},{x:3,y:1}],
-    [{x:0,y:0},{x:0,y:1},{x:1,y:1},{x:1,y:2}],
-    [{x:0,y:1},{x:1,y:1},{x:1,y:0},{x:2,y:0}],
-    [{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:2,y:2}],
-    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:2,y:1},{x:3,y:1}],
-    [{x:0,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:2,y:2}],
-    [{x:1,y:0},{x:1,y:1},{x:2,y:1},{x:3,y:1},{x:3,y:2}],
-    [{x:0,y:2},{x:1,y:2},{x:1,y:1},{x:2,y:1},{x:3,y:1}],
-    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:1,y:1},{x:2,y:1}],
-    [{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:1,y:0},{x:2,y:0}],
-    [{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:2,y:1}],
-    [{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:2,y:0},{x:2,y:2}],
-    [{x:0,y:0},{x:0,y:1},{x:0,y:2},{x:1,y:1},{x:2,y:1}],
-    [{x:1,y:0},{x:2,y:0},{x:1,y:1},{x:0,y:1},{x:2,y:1}],
-    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:1,y:1},{x:1,y:2}],
-    [{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:1,y:0},{x:1,y:2}],
-    [{x:0,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:1,y:2}],
-    [{x:1,y:0},{x:2,y:0},{x:2,y:1},{x:2,y:2},{x:1,y:1}],
-    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:2,y:1},{x:2,y:2}],
-    [{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:2,y:1},{x:3,y:1}],
-    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:1,y:1},{x:0,y:1}],
-    [{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:1,y:0},{x:2,y:0}],
-    [{x:0,y:2},{x:1,y:2},{x:2,y:2},{x:1,y:1},{x:2,y:1}],
-    [{x:0,y:0},{x:0,y:1},{x:0,y:2},{x:1,y:2},{x:2,y:2}],
-    [{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:2,y:1},{x:3,y:1}],
-    [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:2,y:1}],
-    [{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:3,y:1},{x:1,y:0}]
-  ];
-  const idx=Math.floor((simplex.noise2D(cx*0.1,cy*0.1)+1)/2*t.length)%t.length;
-  return t[idx].map(r=>({x:cx+r.x,y:cy+r.y}));
+  const cells=[];
+  const SIZE=8; // cells per chunk side
+  const baseX=cx*SIZE;
+  const baseY=cy*SIZE;
+  for(let y=0;y<SIZE;y++){
+    for(let x=0;x<SIZE;x++){
+      const gx=baseX+x;
+      const gy=baseY+y;
+      const n1=simplex.noise2D(gx*0.05,gy*0.05);
+      const n2=simplex.noise2D(gx*0.15+100,gy*0.15+100);
+      if(n1>0.2||n2>0.5){
+        cells.push({x:gx,y:gy});
+      }
+    }
+  }
+  return cells;
+}
+
+// Helper for the Three.js renderer. Builds a tunnel mesh for a chunk.
+export function generateTunnelMesh(cx,cy,THREE){
+  const cells=generateOrgan(cx,cy);
+  const group=new THREE.Group();
+  const floorGeo=new THREE.PlaneGeometry(1,1);
+  floorGeo.rotateX(-Math.PI/2);
+  const wallGeo=new THREE.PlaneGeometry(1,2);
+  const floorMat=new THREE.MeshBasicMaterial({color:0x222222});
+  const wallMat=new THREE.MeshBasicMaterial({color:0x444444});
+  const cellSet=new Set(cells.map(c=>c.x+','+c.y));
+  for(const c of cells){
+    const fx=c.x;
+    const fz=c.y;
+    const floor=new THREE.Mesh(floorGeo,floorMat);
+    floor.position.set(fx,0,fz);
+    group.add(floor);
+    const dirs=[[1,0],[0,1],[-1,0],[0,-1]];
+    for(let i=0;i<4;i++){
+      const dx=dirs[i][0],dy=dirs[i][1];
+      if(!cellSet.has((c.x+dx)+','+(c.y+dy))){
+        const wall=new THREE.Mesh(wallGeo,wallMat);
+        wall.position.set(fx+dx*0.5,1,fz+dy*0.5);
+        wall.rotation.y=i===0?-Math.PI/2:i===2?Math.PI/2:i===1?Math.PI:0;
+        group.add(wall);
+      }
+    }
+  }
+  return group;
 }
