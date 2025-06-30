@@ -96,7 +96,11 @@ const BULLET_R=0.015;
 let chunkX=0,chunkY=0;
 const loadedChunks={};
 const firstCells=generateOrgan(0,0);
-loadedChunks['0,0']=firstCells.map(t=>AABB(t.x*CHUNK_SIZE,t.y*CHUNK_SIZE,CHUNK_SIZE,CHUNK_SIZE));
+loadedChunks['0,0']=firstCells.map(t=>
+  AABB(t.x*CHUNK_SIZE-PLAYER_R,
+       t.y*CHUNK_SIZE-PLAYER_R,
+       CHUNK_SIZE+PLAYER_R*2,
+       CHUNK_SIZE+PLAYER_R*2));
 
 const enemyTypes={
   normal:{speed:0.1,hp:10},
@@ -264,7 +268,11 @@ function loop(ts){
     chunkX=cxx;chunkY=cyy;
     const key=cxx+','+cyy;
     if(!loadedChunks[key]){
-      const cells=generateOrgan(cxx,cyy).map(t=>AABB(t.x*CHUNK_SIZE,t.y*CHUNK_SIZE,CHUNK_SIZE,CHUNK_SIZE));
+      const cells=generateOrgan(cxx,cyy).map(t=>
+        AABB(t.x*CHUNK_SIZE-PLAYER_R,
+             t.y*CHUNK_SIZE-PLAYER_R,
+             CHUNK_SIZE+PLAYER_R*2,
+             CHUNK_SIZE+PLAYER_R*2));
       loadedChunks[key]=cells;
       console.log('generate',key,cells);
     }
