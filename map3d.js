@@ -1,11 +1,13 @@
 import * as THREE from './three.module.js';
 import { PointerLockControls } from './PointerLockControls.js';
+import { generateTunnelMesh, setSeed } from './organGen.js';
 
 let camera, scene, renderer, controls;
 let enemies = [];
 let raycaster;
 let crosshair;
 let lastShot = 0;
+let level;
 
 init();
 animate();
@@ -19,6 +21,7 @@ function init(){
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x050505);
+  setSeed(0);
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
   camera.position.y = 1.6;
@@ -26,11 +29,8 @@ function init(){
   controls = new PointerLockControls(camera, canvas);
   canvas.addEventListener('click', () => controls.lock());
 
-  const floorGeo = new THREE.PlaneGeometry(10, 10);
-  const floorMat = new THREE.MeshBasicMaterial({color:0x222222});
-  const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.rotation.x = -Math.PI/2;
-  scene.add(floor);
+  level = generateTunnelMesh(0,0,THREE);
+  scene.add(level);
 
   const boxGeo = new THREE.BoxGeometry(0.5,0.5,0.5);
   const boxMat = new THREE.MeshNormalMaterial();
