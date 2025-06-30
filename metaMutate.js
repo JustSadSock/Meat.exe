@@ -1,4 +1,4 @@
-let rules={gravity:1,friction:0.9,enemySpeed:1,FOV:1,bloodLimit:500};
+let rules={gravity:1,friction:0.9,enemySpeed:1,FOV:1,bloodLimit:500,regen:1};
 
 function defaultBloodLimit(){
   const mem=navigator.deviceMemory||4;
@@ -18,9 +18,16 @@ export function initMeta(){
 export function mutateRules(){
   const keys=Object.keys(rules);
   const k=keys[Math.floor(Math.random()*keys.length)];
-  rules[k]*=0.5+Math.random();
+  if(k==='regen'){
+    rules[k]=rules[k]>0?0:1;
+  } else if(k==='bloodLimit') {
+    rules[k]=Math.max(100,Math.floor(rules[k]*(0.5+Math.random())));
+  } else {
+    rules[k]*=0.5+Math.random();
+  }
   localStorage.setItem('meatRules',JSON.stringify(rules));
   console.log('Meta-mutation:',k,rules[k]);
+  return {key:k,value:rules[k]};
 }
 
 export function setPerformanceSettings(opts={}){
@@ -30,4 +37,10 @@ export function setPerformanceSettings(opts={}){
 
 export function getRules(){
   return rules;
+}
+
+export function formatRules(){
+  return Object.entries(rules)
+    .map(([k,v])=>`${k}: ${typeof v==='number'?v.toFixed(2):v}`)
+    .join('\n');
 }
