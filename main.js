@@ -1,7 +1,7 @@
 import { initEngine, renderFrame, setGlitch } from './engine.js';
 import { generateOrgan } from './organGen.js';
 import { guns, reloadShader } from './shaderGuns.js';
-import { updateBlood } from './goreSim.js';
+import { updateBlood, spawnBlood, getBlood } from './goreSim.js';
 import { initMeta, mutateRules } from './metaMutate.js';
 
 const dev = new URLSearchParams(location.search).get('dev') === '1';
@@ -10,6 +10,46 @@ const gl = canvas.getContext('webgl2');
 
 initEngine(gl, canvas, dev);
 initMeta();
+
+const cross=document.getElementById('crosshair');
+let locked=false,cx=window.innerWidth/2,cy=window.innerHeight/2;
+canvas.addEventListener('click',()=>{
+  if(!locked) canvas.requestPointerLock();
+  else fire();
+});
+document.addEventListener('pointerlockchange',()=>{
+  locked=document.pointerLockElement===canvas;
+});
+document.addEventListener('mousemove',e=>{
+  if(!locked)return;
+  cx=Math.min(window.innerWidth,Math.max(0,cx+e.movementX));
+  cy=Math.min(window.innerHeight,Math.max(0,cy+e.movementY));
+  cross.style.left=cx+'px';
+  cross.style.top=cy+'px';
+});
+
+const player={x:0.5,y:0.5};
+let bullets=[],enemies=[],wave=7,difficulty=1;
+
+function fire(){
+  const dx=cx/window.innerWidth-0.5;
+  const dy=cy/window.innerHeight-0.5;
+  const l=Math.hypot(dx,dy)||1;
+  bullets.push({x:player.x,y:player.y,dx:dx/l*0.6,dy:dy/l*0.6,life:2});
+  setGlitch(true);
+}
+
+function spawnWave(d){
+  for(let i=0;i<3*d;i++){
+    const s=Math.floor(Math.random()*4);
+    let x,y;
+    if(s===0){x=Math.random();y=-0.05;}else if(s===1){x=Math.random();y=1.05;}
+    else if(s===2){x=-0.05;y=Math.random();}else{x=1.05;y=Math.random();}
+    enemies.push({x,y});
+  }
+}
+
+spawnWave(difficulty);
 
 document.getElementById('glitchBtn').onclick = () => setGlitch(true);
 
@@ -25,8 +65,16 @@ let last = 0;
 function loop(ts){
   const dt = (ts - last)/1000;
   last = ts;
-  renderFrame(dt);
+  bullets.forEach(b=>{b.x+=b.dx*dt;b.y+=b.dy*dt;b.life-=dt;});
+  bullets=bullets.filter(b=>b.life>0&&b.x>-0.1&&b.x<1.1&&b.y>-0.1&&b.y<1.1);
+  enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*0.1*dt;e.y+=dy/l*0.1*dt;});
+  for(let i=bullets.length-1;i>=0;i--)for(let j=enemies.length-1;j>=0;j--){
+    const dx=bullets[i].x-enemies[j].x,dy=bullets[i].y-enemies[j].y;
+    if(Math.hypot(dx,dy)<0.03){spawnBlood(enemies[j].x,enemies[j].y);enemies.splice(j,1);bullets.splice(i,1);break;}
+  }
+  wave-=dt; if(wave<=0){spawnWave(difficulty);wave=7;}
   updateBlood(dt);
+  renderFrame(dt,bullets,enemies,getBlood());
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
