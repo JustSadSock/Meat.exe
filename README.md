@@ -1,4 +1,5 @@
 # Meat.exe
+A minimal static WebGL shooter ready for Netlify deployment.
 
 // === ЦЕЛЬ ==============================================================
 // Сгенерируй полный фронтовый проект «MEAT.EXE» — горизонтальный (landscape)
