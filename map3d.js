@@ -15,7 +15,12 @@ init();
 animate();
 
 function init(){
-  const canvas = document.getElementById('gl');
+  let canvas = document.getElementById('gl3d');
+  if(!canvas){
+    canvas = document.createElement('canvas');
+    canvas.id = 'gl3d';
+    document.body.appendChild(canvas);
+  }
   renderer = new THREE.WebGLRenderer({canvas});
   renderer.setSize(window.innerWidth, window.innerHeight);
   crosshair = document.getElementById('crosshair');
