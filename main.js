@@ -76,11 +76,22 @@ let chunkX=0,chunkY=0;
 const loadedChunks={};
 loadedChunks['0,0']=generateOrgan(0,0).map(t=>AABB(t.x*CHUNK_SIZE,t.y*CHUNK_SIZE,CHUNK_SIZE,CHUNK_SIZE));
 
+const enemyTypes={
+  normal:{speed:0.1,hp:10},
+  fast:{speed:0.15,hp:5},
+  tank:{speed:0.07,hp:20},
+  phantom:{speed:0.12,hp:1,phantom:true,life:5},
+  mini:{speed:0.08,hp:50,boss:true},
+  hashHeart:{speed:0.05,hp:100,boss:true}
+};
+
 const player={x:0.5,y:0.5,vx:0,vy:0,hp:100};
 let sprint=false;
 let slideTimer=0;
 let hook=null;
 let bullets=[],enemies=[],wave=7,difficulty=1,kills=0;
+let damageDealt=0,dpsTime=0;
+let gameTime=0,bossTimer=90,finalBoss=false;
 let fragItems=[];
 const fragmentPool=[
   'outColor.rgb*=vec3(gl_PointCoord.x,gl_PointCoord.y,1.0);',
@@ -106,19 +117,25 @@ function fire(){
   }
   const l=Math.hypot(dx,dy)||1;
   const gun=guns[currentGun];
-  bullets.push({x:player.x,y:player.y,dx:dx/l*0.6,dy:dy/l*0.6,life:2,size:gun.size,r:BULLET_R*gun.lvl});
+  bullets.push({x:player.x,y:player.y,dx:dx/l*0.6,dy:dy/l*0.6,life:2,size:gun.size,r:BULLET_R*gun.lvl,damage:gun.damage});
   shootTimer=gun.cooldown;
   setGlitch(true);
   kickFov(0.2);
 }
 
-function spawnWave(d,immortal=false){
+function makeEnemy(type,x,y,immortal=false){
+  const base=enemyTypes[type]||enemyTypes.normal;
+  return {x,y,immortal,type,speed:base.speed,hp:base.hp,phase:1,phantom:base.phantom,boss:base.boss,life:base.life||Infinity};
+}
+
+function spawnWave(d,type="normal",immortal=false){
   for(let i=0;i<3*d;i++){
     const s=Math.floor(Math.random()*4);
     let x,y;
     if(s===0){x=Math.random();y=-0.05;}else if(s===1){x=Math.random();y=1.05;}
     else if(s===2){x=-0.05;y=Math.random();}else{x=1.05;y=Math.random();}
-    enemies.push({x,y,immortal});
+    const t=type==="mix"?['normal','fast','tank'][Math.floor(Math.random()*3)]:type;
+    enemies.push(makeEnemy(t,x,y,immortal));
   }
 }
 
@@ -133,7 +150,18 @@ function rocketKnockback(x,y){
   }
 }
 
-spawnWave(difficulty);
+function spawnMiniBoss(){
+  const x=Math.random()<0.5?-0.05:1.05;
+  const y=Math.random();
+  enemies.push(makeEnemy('mini',x,y));
+}
+
+function spawnHashHeart(){
+  enemies.push(makeEnemy('hashHeart',0.5,-0.2));
+  finalBoss=true;
+}
+
+spawnWave(difficulty,"mix");
 
 document.getElementById('glitchBtn').onclick = () => setGlitch(true);
 
@@ -202,7 +230,7 @@ function loop(ts){
   }
   const allBoxes=[];
   for(const k in loadedChunks) allBoxes.push(...loadedChunks[k]);
-  enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*0.1*dt;e.y+=dy/l*0.1*dt;
+  enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*e.speed*dt;e.y+=dy/l*e.speed*dt;e.life-=dt;
     const circ={x:e.x,y:e.y,r:ENEMY_R};
     let inside=false;
     for(const box of allBoxes){if(circleInsideAABB(circ,box)){inside=true;break;}}
@@ -220,16 +248,27 @@ function loop(ts){
       }
     }
   });
+  enemies=enemies.filter(e=>e.life>0);
   for(let i=bullets.length-1;i>=0;i--)for(let j=enemies.length-1;j>=0;j--){
     if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:bullets[i].r},{x:enemies[j].x,y:enemies[j].y,r:ENEMY_R})){
       spawnBlood(enemies[j].x,enemies[j].y);
       rocketKnockback(bullets[i].x,bullets[i].y);
-      if(!enemies[j].immortal){
-        if(Math.random()<0.3){
-          const code=fragmentPool[Math.floor(Math.random()*fragmentPool.length)];
-          fragItems.push({x:enemies[j].x,y:enemies[j].y,code});
+      enemies[j].hp-=bullets[i].damage;
+      damageDealt+=bullets[i].damage;
+      if(enemies[j].hp<=0 && !enemies[j].immortal){
+        if(enemies[j].type==='hashHeart' && enemies[j].phase<3){
+          enemies[j].phase++;
+          enemies[j].hp=enemyTypes.hashHeart.hp;
+          enemies[j].speed+=0.02;
+        } else {
+          if(!enemies[j].phantom && Math.random()<0.3){
+            const code=fragmentPool[Math.floor(Math.random()*fragmentPool.length)];
+            fragItems.push({x:enemies[j].x,y:enemies[j].y,code});
+          }
+          if(!enemies[j].phantom) kills++;
+          enemies.splice(j,1);
         }
-        enemies.splice(j,1);kills++;}
+      }
       bullets.splice(i,1);
       break;
     }
@@ -252,16 +291,33 @@ function loop(ts){
     player.hp=100;difficulty=1;kills=0;
   }
   if(elapsed>=60){
-    const dps=kills/elapsed;
+    const kps=kills/elapsed;
     const expected=difficulty;
-    difficulty=Math.min(3.5,Math.max(0.7,0.8+(dps/expected-1)*0.6-(player.hp<50?0.1:0)+(elapsed/60)*0.05));
-    if(dps/expected>1.4){
+    difficulty=Math.min(3.5,Math.max(0.7,0.8+(kps/expected-1)*0.6-(player.hp<50?0.1:0)+(elapsed/60)*0.05));
+    if(kps/expected>1.4){
       setGlitch(true);
-      spawnWave(Math.ceil(difficulty),true); // anti-cheat mobs
+      spawnWave(Math.ceil(difficulty),"phantom",true); // anti-cheat mobs
     }
     kills=0;elapsed=0;
   }
-  wave-=dt; if(wave<=0){spawnWave(difficulty);wave=7;}
+
+  dpsTime+=dt;gameTime+=dt;bossTimer-=dt;
+  if(dpsTime>=30){
+    const dps=damageDealt/dpsTime;
+    if(dps>difficulty*15){
+      spawnWave(Math.ceil(difficulty),"phantom");
+    }
+    damageDealt=0;dpsTime=0;
+  }
+  if(!finalBoss){
+    if(gameTime>=360){
+      spawnHashHeart();
+    }else if(bossTimer<=0){
+      spawnMiniBoss();
+      bossTimer=90;
+    }
+  }
+  wave-=dt; if(wave<=0){spawnWave(difficulty,"mix");wave=7;}
   updateBlood(dt);
   const offX=player.x-0.5,offY=player.y-0.5;
   const rb=bullets.map(b=>({x:b.x-offX,y:b.y-offY}));
