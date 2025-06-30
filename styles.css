@@ -11,3 +11,7 @@ canvas{display:block;width:100%;height:100%;}
 #crosshair:before,#crosshair:after{content:'';position:absolute;background:currentColor}
 #crosshair:before{left:50%;top:0;width:2px;height:100%;margin-left:-1px}
 #crosshair:after{top:50%;left:0;width:100%;height:2px;margin-top:-1px}
+.joystick{position:absolute;width:80px;height:80px;border:1px solid rgba(255,255,255,0.2);border-radius:50%;bottom:20px;touch-action:none}
+#joyL{left:20px}
+#joyR{right:20px}
+.joystick .inner{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:50%;top:50%;left:50%;margin:-20px}
