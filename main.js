@@ -21,8 +21,11 @@ const joyR=document.getElementById('joyR');
 const joyLInner=joyL.querySelector('.inner');
 const joyRInner=joyR.querySelector('.inner');
 let moveJoy={x:0,y:0},aimJoy={x:0,y:0};
+const JOY_CROSS_RANGE=60;
 if(hasTouch){
-  cross.style.display='none';
+  cross.style.display='block';
+  cross.style.left='50%';
+  cross.style.top='50%';
 }else{
   joyL.style.display='none';
   joyR.style.display='none';
@@ -48,7 +51,7 @@ if(!hasTouch){
   });
 } 
 else {
-  const joyUpdate=(el,inner,vec)=>e=>{
+  const joyUpdate=(el,inner,vec,isAim)=>e=>{
     const r=el.clientWidth/2;
     const rect=el.getBoundingClientRect();
     const x=e.touches?e.touches[0].clientX:e.clientX;
@@ -60,16 +63,22 @@ else {
     inner.style.left=r+nx+'px';
     inner.style.top=r+ny+'px';
     vec.x=nx/r;vec.y=ny/r;
+    if(isAim){
+      cx=window.innerWidth/2+vec.x*JOY_CROSS_RANGE;
+      cy=window.innerHeight/2+vec.y*JOY_CROSS_RANGE;
+      cross.style.left=cx+'px';
+      cross.style.top=cy+'px';
+    }
   };
   let lActive=false,rActive=false;
-  joyL.addEventListener('pointerdown',e=>{lActive=true;joyUpdate(joyL,joyLInner,moveJoy)(e);});
-  joyL.addEventListener('pointermove',e=>{if(lActive)joyUpdate(joyL,joyLInner,moveJoy)(e);});
+  joyL.addEventListener('pointerdown',e=>{lActive=true;joyUpdate(joyL,joyLInner,moveJoy,false)(e);});
+  joyL.addEventListener('pointermove',e=>{if(lActive)joyUpdate(joyL,joyLInner,moveJoy,false)(e);});
   joyL.addEventListener('pointerup',()=>{lActive=false;moveJoy.x=moveJoy.y=0;joyLInner.style.left='50%';joyLInner.style.top='50%';});
   joyL.addEventListener('pointercancel',()=>{lActive=false;moveJoy.x=moveJoy.y=0;joyLInner.style.left='50%';joyLInner.style.top='50%';});
-  joyR.addEventListener('pointerdown',e=>{rActive=true;joyUpdate(joyR,joyRInner,aimJoy)(e);});
-  joyR.addEventListener('pointermove',e=>{if(rActive)joyUpdate(joyR,joyRInner,aimJoy)(e);});
-  joyR.addEventListener('pointerup',()=>{rActive=false;aimJoy.x=aimJoy.y=0;joyRInner.style.left='50%';joyRInner.style.top='50%';fire();});
-  joyR.addEventListener('pointercancel',()=>{rActive=false;aimJoy.x=aimJoy.y=0;joyRInner.style.left='50%';joyRInner.style.top='50%';});
+  joyR.addEventListener('pointerdown',e=>{rActive=true;joyUpdate(joyR,joyRInner,aimJoy,true)(e);});
+  joyR.addEventListener('pointermove',e=>{if(rActive)joyUpdate(joyR,joyRInner,aimJoy,true)(e);});
+  joyR.addEventListener('pointerup',()=>{rActive=false;aimJoy.x=aimJoy.y=0;joyRInner.style.left='50%';joyRInner.style.top='50%';cx=window.innerWidth/2;cy=window.innerHeight/2;cross.style.left=cx+'px';cross.style.top=cy+'px';fire();});
+  joyR.addEventListener('pointercancel',()=>{rActive=false;aimJoy.x=aimJoy.y=0;joyRInner.style.left='50%';joyRInner.style.top='50%';cx=window.innerWidth/2;cy=window.innerHeight/2;cross.style.left=cx+'px';cross.style.top=cy+'px';});
 }
 
 const CHUNK_SIZE=0.25;
