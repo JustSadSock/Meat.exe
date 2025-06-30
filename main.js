@@ -1,8 +1,8 @@
 import { initEngine, renderFrame, setGlitch, kickFov } from './engine.js';
 import { generateOrgan } from './organGen.js';
 import { guns, reloadShader, initGuns, addFragment, getBestFragment, applyFragment, fragmentInventory } from './shaderGuns.js';
-import { updateBlood, spawnBlood, getBlood } from './goreSim.js';
-import { initMeta, mutateRules, getRules } from './metaMutate.js';
+import { updateBlood, spawnBlood, getBlood, bindPlayer } from './goreSim.js';
+import { initMeta, mutateRules, getRules, setPerformanceSettings } from './metaMutate.js';
 import { AABB, circleVsCircle, circleInsideAABB, clampCircleToAABB } from './geom.js';
 
 const dev = new URLSearchParams(location.search).get('dev') === '1';
@@ -86,6 +86,7 @@ const enemyTypes={
 };
 
 const player={x:0.5,y:0.5,vx:0,vy:0,hp:100};
+bindPlayer(player);
 let sprint=false;
 let slideTimer=0;
 let hook=null;
@@ -105,6 +106,11 @@ const keys={};
 const hpVal=document.getElementById('hpVal');
 const ammoVal=document.getElementById('ammoVal');
 const fpsEl=document.getElementById('fps');
+const bloodCap=document.getElementById('bloodCap');
+bloodCap.value=getRules().bloodLimit;
+bloodCap.addEventListener('input',()=>{
+  setPerformanceSettings({bloodLimit:Number(bloodCap.value)});
+});
 
 function fire(){
   if(shootTimer>0) return;
