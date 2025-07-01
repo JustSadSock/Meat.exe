@@ -1,6 +1,6 @@
 import * as THREE from './three.module.js';
 import { PointerLockControls } from './PointerLockControls.js';
-import { generateTunnelMesh, generateOrgan, setSeed, CELLS_PER_CHUNK } from './organGen.js';
+import { generateTunnelMesh, generateOrgan, setSeed, CELLS_PER_CHUNK, edgeOpen, edgeCoord } from './organGen.js';
 import { AABB, circleVsAABB } from './geom.js';
 
 const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
@@ -59,7 +59,7 @@ function init(){
   scene.add(level);
   loadedChunks['0,0']=level;
   loadedCells['0,0']=generateOrgan(0,0);
-  loadedWalls['0,0']=computeWalls(loadedCells['0,0']);
+  loadedWalls['0,0']=computeWalls(loadedCells['0,0'],0,0);
 
   // spawn player at the center cell to ensure corridor connectivity
   const cx = CELLS_PER_CHUNK/2;
@@ -120,16 +120,33 @@ function onKeyUp(e){
   }
 }
 
-function computeWalls(cells){
+function computeWalls(cells,cx,cy){
   const set=new Set(cells.map(c=>c.x+','+c.y));
   const WALL=0.1;
   const walls=[];
+  const SIZE=CELLS_PER_CHUNK;
+  const edgeCoords=[edgeCoord(cx,cy,0),edgeCoord(cx,cy,1),edgeCoord(cx,cy,2),edgeCoord(cx,cy,3)];
+  const edgeOpenings=[edgeOpen(cx,cy,0),edgeOpen(cx,cy,1),edgeOpen(cx,cy,2),edgeOpen(cx,cy,3)];
   for(const c of cells){
     const x=c.x, y=c.y;
-    if(!set.has(x+','+(y-1))) walls.push(AABB(x, y-WALL, 1, WALL));
-    if(!set.has(x+','+(y+1))) walls.push(AABB(x, y+1, 1, WALL));
-    if(!set.has((x-1)+','+y)) walls.push(AABB(x-WALL, y, WALL, 1));
-    if(!set.has((x+1)+','+y)) walls.push(AABB(x+1, y, WALL, 1));
+    const lx=x-cx*SIZE;
+    const ly=y-cy*SIZE;
+    if(!set.has(x+','+(y-1))){
+      const skip=ly===0 && edgeOpenings[0] && lx===edgeCoords[0];
+      if(!skip) walls.push(AABB(x, y-WALL, 1, WALL));
+    }
+    if(!set.has(x+','+(y+1))){
+      const skip=ly===SIZE-1 && edgeOpenings[2] && lx===edgeCoords[2];
+      if(!skip) walls.push(AABB(x, y+1, 1, WALL));
+    }
+    if(!set.has((x-1)+','+y)){
+      const skip=lx===0 && edgeOpenings[3] && ly===edgeCoords[3];
+      if(!skip) walls.push(AABB(x-WALL, y, WALL, 1));
+    }
+    if(!set.has((x+1)+','+y)){
+      const skip=lx===SIZE-1 && edgeOpenings[1] && ly===edgeCoords[1];
+      if(!skip) walls.push(AABB(x+1, y, WALL, 1));
+    }
   }
   return walls;
 }
@@ -186,7 +203,7 @@ function animate(){
       scene.add(mesh);
       loadedChunks[key]=mesh;
       loadedCells[key]=generateOrgan(cxi,czi);
-      loadedWalls[key]=computeWalls(loadedCells[key]);
+      loadedWalls[key]=computeWalls(loadedCells[key],cxi,czi);
     }
   }
   const t=time*0.001;
