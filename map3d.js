@@ -4,8 +4,13 @@ import { generateTunnelMesh, generateOrgan, setSeed, CELLS_PER_CHUNK, edgeOpen, 
 import { AABB, circleVsAABB } from './geom.js';
 
 const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
-const moveJoy = window.moveJoy || {x:0,y:0};
-const aimJoy = window.aimJoy || {x:0,y:0};
+// access joystick objects lazily to avoid capturing stale references
+function getMoveJoy(){
+  return window.moveJoy || {x:0,y:0};
+}
+function getAimJoy(){
+  return window.aimJoy || {x:0,y:0};
+}
 
 let camera, scene, renderer, controls;
 let enemies = [];
@@ -188,6 +193,8 @@ function animate(){
   if(hasTouch){
     const rotSpeed=2.5;
     const euler=new THREE.Euler(0,0,0,'YXZ');
+    const aimJoy=getAimJoy();
+    const moveJoy=getMoveJoy();
     euler.setFromQuaternion(camera.quaternion);
     euler.y-=aimJoy.x*rotSpeed*delta;
     euler.x-=aimJoy.y*rotSpeed*delta;
