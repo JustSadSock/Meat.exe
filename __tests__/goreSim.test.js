@@ -1,4 +1,4 @@
-import { bindPlayer, spawnBlood, updateBlood, getBlood } from '../goreSim.js';
+import { bindPlayer, spawnBlood, updateBlood, getBlood, applyBloodEffects } from '../goreSim.js';
 import { setPerformanceSettings } from '../metaMutate.js';
 
 describe('gore simulation', () => {
@@ -27,5 +27,15 @@ describe('gore simulation', () => {
     b.forEach(p => p.life = 0.01);
     updateBlood(0.02);
     expect(getBlood().length).toBeLessThan(initialLength);
+  });
+
+  test('applyBloodEffects damages nearby entities', () => {
+    const enemy = { x: 0, y: 0, hp: 5, speed: 1 };
+    const player = { x: 0, y: 0, hp: 5 };
+    bindPlayer(player);
+    spawnBlood(0, 0, 'burning', 1);
+    applyBloodEffects([enemy], player, 0.1);
+    expect(enemy.hp).toBeLessThan(5);
+    expect(player.hp).toBeLessThan(5);
   });
 });

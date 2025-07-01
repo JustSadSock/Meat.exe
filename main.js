@@ -1,7 +1,7 @@
 import { initEngine, renderFrame, setGlitch, kickFov } from './engine.js';
 import { generateOrgan } from './organGen.js';
 import { guns, reloadShader, initGuns, addFragment, getBestFragment, applyFragment, fragmentInventory } from './shaderGuns.js';
-import { updateBlood, spawnBlood, getBlood, bindPlayer } from './goreSim.js';
+import { updateBlood, spawnBlood, getBlood, bindPlayer, applyBloodEffects } from './goreSim.js';
 import { initMeta, mutateRules, getRules, setPerformanceSettings, formatRules } from './metaMutate.js';
 import { AABB, circleVsCircle, circleInsideAABB, clampCircleToAABB } from './geom.js';
 import { initAudio, triggerGlitch } from './audio.js';
@@ -170,7 +170,7 @@ function fire(){
   }
   const l=Math.hypot(dx,dy)||1;
   const gun=guns[currentGun];
-  bullets.push({x:player.x,y:player.y,dx:dx/l*0.6,dy:dy/l*0.6,life:2,size:gun.size,r:BULLET_R*gun.lvl,damage:gun.damage});
+  bullets.push({x:player.x,y:player.y,dx:dx/l*0.6,dy:dy/l*0.6,life:2,size:gun.size,r:BULLET_R*gun.lvl,damage:gun.damage,effect:gun.effect});
   flashes.push({x:player.x,y:player.y,life:0.1});
   shootTimer=gun.cooldown;
   setGlitch(true);
@@ -353,7 +353,7 @@ function loop(ts){
         const px=e.x+p.dx+Math.cos(p.phase)*0.01;
         const py=e.y+p.dy+Math.sin(p.phase)*0.01;
         if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:bullets[i].r},{x:px,y:py,r:p.r})){
-          spawnBlood(px,py);
+          spawnBlood(px,py,bullets[i].effect);
           rocketKnockback(bullets[i].x,bullets[i].y);
           p.hp-=bullets[i].damage;
           e.hp-=bullets[i].damage;
@@ -391,7 +391,7 @@ function loop(ts){
     }
     if(hitBody){
       player.hp-=10;
-      spawnBlood(player.x,player.y);
+      spawnBlood(player.x,player.y,'normal');
       enemies.splice(i,1);
     }
   }
@@ -436,6 +436,7 @@ function loop(ts){
   }
   wave-=dt; if(wave<=0){spawnWave(difficulty,"mix");wave=7;}
   updateBlood(dt);
+  applyBloodEffects(enemies,player,dt);
   const offX=player.x-0.5,offY=player.y-0.5;
   const rb=bullets.map(b=>({x:b.x-offX,y:b.y-offY}));
   const re=[];
