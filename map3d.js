@@ -22,6 +22,7 @@ const CHUNK_SIZE=8;
 const loadedChunks={};
 const loadedCells={};
 const loadedWalls={};
+const PRELOAD_RADIUS=1;
 const PLAYER_R=0.2;
 let chunkX=0,chunkZ=0;
 
@@ -53,13 +54,10 @@ function init(){
   controls = new PointerLockControls(camera, canvas);
   canvas.addEventListener('click', () => controls.lock());
 
-  level = generateTunnelMesh(0,0,THREE);
+  loadChunk(0,0);
+  level = loadedChunks['0,0'];
   organMat = level.userData.materials.floor;
-  level.traverse(obj=>{if(obj.isMesh) obj.material=organMat;});
-  scene.add(level);
-  loadedChunks['0,0']=level;
-  loadedCells['0,0']=generateOrgan(0,0);
-  loadedWalls['0,0']=computeWalls(loadedCells['0,0'],0,0);
+  preloadAround(0,0);
 
   // spawn player at the center cell to ensure corridor connectivity
   const cx = CELLS_PER_CHUNK/2;
@@ -151,6 +149,27 @@ function computeWalls(cells,cx,cy){
   return walls;
 }
 
+function loadChunk(cx,cz){
+  const key=cx+','+cz;
+  if(!loadedChunks[key]){
+    const mesh=generateTunnelMesh(cx,cz,THREE);
+    if(!organMat) organMat=mesh.userData.materials.floor;
+    mesh.traverse(obj=>{if(obj.isMesh) obj.material=organMat;});
+    scene.add(mesh);
+    loadedChunks[key]=mesh;
+    loadedCells[key]=generateOrgan(cx,cz);
+    loadedWalls[key]=computeWalls(loadedCells[key],cx,cz);
+  }
+}
+
+function preloadAround(cx,cz){
+  for(let dz=-PRELOAD_RADIUS;dz<=PRELOAD_RADIUS;dz++){
+    for(let dx=-PRELOAD_RADIUS;dx<=PRELOAD_RADIUS;dx++){
+      loadChunk(cx+dx,cz+dz);
+    }
+  }
+}
+
 function animate(){
   requestAnimationFrame(animate);
   const time=performance.now();
@@ -196,15 +215,7 @@ function animate(){
   const czi=Math.floor(camera.position.z/CHUNK_SIZE);
   if(cxi!==chunkX||czi!==chunkZ){
     chunkX=cxi;chunkZ=czi;
-    const key=cxi+','+czi;
-    if(!loadedChunks[key]){
-      const mesh=generateTunnelMesh(cxi,czi,THREE);
-      mesh.traverse(obj=>{if(obj.isMesh) obj.material=organMat;});
-      scene.add(mesh);
-      loadedChunks[key]=mesh;
-      loadedCells[key]=generateOrgan(cxi,czi);
-      loadedWalls[key]=computeWalls(loadedCells[key],cxi,czi);
-    }
+    preloadAround(cxi,czi);
   }
   const t=time*0.001;
   const p=0.5+Math.sin(t*2)*0.5;
