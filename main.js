@@ -129,6 +129,7 @@ let sprint=false;
 let slideTimer=0;
 let hook=null;
 let bullets=[],enemies=[],wave=7,difficulty=1,kills=0;
+let flashes=[];
 let damageDealt=0,dpsTime=0;
 let gameTime=0,bossTimer=90,finalBoss=false;
 let fragItems=[];
@@ -170,6 +171,7 @@ function fire(){
   const l=Math.hypot(dx,dy)||1;
   const gun=guns[currentGun];
   bullets.push({x:player.x,y:player.y,dx:dx/l*0.6,dy:dy/l*0.6,life:2,size:gun.size,r:BULLET_R*gun.lvl,damage:gun.damage});
+  flashes.push({x:player.x,y:player.y,life:0.1});
   shootTimer=gun.cooldown;
   setGlitch(true);
   kickFov(0.2);
@@ -178,7 +180,15 @@ function fire(){
 function makeEnemy(type,x,y,immortal=false){
   const base=enemyTypes[type]||enemyTypes.normal;
   const mult=getRules().enemySpeed||1;
-  return {x,y,immortal,type,speed:base.speed*mult,hp:base.hp,phase:1,phantom:base.phantom,boss:base.boss,life:base.life||Infinity,wobble:Math.random()*Math.PI*2};
+  const partR=ENEMY_R*0.5;
+  const parts=[
+    {name:'head',dx:0,dy:-ENEMY_R*1.2,r:partR,hp:2,alive:true,phase:Math.random()*Math.PI*2},
+    {name:'lArm',dx:-ENEMY_R*1.2,dy:0,r:partR,hp:3,alive:true,phase:Math.random()*Math.PI*2},
+    {name:'rArm',dx:ENEMY_R*1.2,dy:0,r:partR,hp:3,alive:true,phase:Math.random()*Math.PI*2},
+    {name:'lLeg',dx:-ENEMY_R*0.6,dy:ENEMY_R*1.2,r:partR,hp:3,alive:true,phase:Math.random()*Math.PI*2},
+    {name:'rLeg',dx:ENEMY_R*0.6,dy:ENEMY_R*1.2,r:partR,hp:3,alive:true,phase:Math.random()*Math.PI*2}
+  ];
+  return {x,y,immortal,type,speed:base.speed*mult,hp:base.hp,phase:1,phantom:base.phantom,boss:base.boss,life:base.life||Infinity,wobble:Math.random()*Math.PI*2,parts};
 }
 
 function spawnWave(d,type="normal",immortal=false){
@@ -285,6 +295,10 @@ function loop(ts){
       bullets.splice(i,1);
     }
   }
+  for(let i=flashes.length-1;i>=0;i--){
+    flashes[i].life-=dt;
+    if(flashes[i].life<=0) flashes.splice(i,1);
+  }
   const allBoxes=[];
   for(const k in loadedChunks) allBoxes.push(...loadedChunks[k]);
   const playerCirc={x:player.x,y:player.y,r:PLAYER_R};
@@ -311,6 +325,7 @@ function loop(ts){
     e.x+=(dx/l+Math.cos(ang)*off)*e.speed*dt;
     e.y+=(dy/l+Math.sin(ang)*off)*e.speed*dt;
     e.life-=dt;
+    e.parts.forEach(p=>{if(p.alive)p.phase+=dt*5;});
     const circ={x:e.x,y:e.y,r:ENEMY_R};
     let inside=false;
     for(const box of allBoxes){if(circleInsideAABB(circ,box)){inside=true;break;}}
@@ -329,35 +344,55 @@ function loop(ts){
     }
   });
   enemies=enemies.filter(e=>e.life>0);
-  for(let i=bullets.length-1;i>=0;i--)for(let j=enemies.length-1;j>=0;j--){
-    if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:bullets[i].r},{x:enemies[j].x,y:enemies[j].y,r:ENEMY_R})){
-      spawnBlood(enemies[j].x,enemies[j].y);
-      rocketKnockback(bullets[i].x,bullets[i].y);
-      const fatal = bullets[i].damage >= enemies[j].hp;
-      enemies[j].hp-=bullets[i].damage;
-      damageDealt+=bullets[i].damage;
-      if(fatal) triggerGlitch();
-      if(enemies[j].hp<=0 && !enemies[j].immortal){
-        if(enemies[j].type==='hashHeart' && enemies[j].phase<3){
-          enemies[j].phase++;
-          enemies[j].hp=enemyTypes.hashHeart.hp;
-          enemies[j].speed+=0.02;
-        } else {
-          if(!enemies[j].phantom && Math.random()<0.3){
-            const code=fragmentPool[Math.floor(Math.random()*fragmentPool.length)];
-            fragItems.push({x:enemies[j].x,y:enemies[j].y,code});
+  for(let i=bullets.length-1;i>=0;i--){
+    let hit=false;
+    for(let j=enemies.length-1;j>=0 && !hit;j--){
+      const e=enemies[j];
+      for(const p of e.parts){
+        if(!p.alive) continue;
+        const px=e.x+p.dx+Math.cos(p.phase)*0.01;
+        const py=e.y+p.dy+Math.sin(p.phase)*0.01;
+        if(circleVsCircle({x:bullets[i].x,y:bullets[i].y,r:bullets[i].r},{x:px,y:py,r:p.r})){
+          spawnBlood(px,py);
+          rocketKnockback(bullets[i].x,bullets[i].y);
+          p.hp-=bullets[i].damage;
+          e.hp-=bullets[i].damage;
+          damageDealt+=bullets[i].damage;
+          if(p.hp<=0) p.alive=false;
+          if(e.hp<=0 && !e.immortal){
+            if(e.type==='hashHeart' && e.phase<3){
+              e.phase++;e.hp=enemyTypes.hashHeart.hp;e.speed+=0.02;
+            } else {
+              if(!e.phantom && Math.random()<0.3){
+                const code=fragmentPool[Math.floor(Math.random()*fragmentPool.length)];
+                fragItems.push({x:e.x,y:e.y,code});
+              }
+              if(!e.phantom) kills++; 
+              enemies.splice(j,1);
+            }
           }
-          if(!enemies[j].phantom) kills++;
-          enemies.splice(j,1);
+          bullets.splice(i,1);
+          hit=true;
+          break;
         }
       }
-      bullets.splice(i,1);
-      break;
     }
   }
   for(let i=enemies.length-1;i>=0;i--){
-    if(circleVsCircle({x:player.x,y:player.y,r:PLAYER_R},{x:enemies[i].x,y:enemies[i].y,r:ENEMY_R})){
-      player.hp-=10;spawnBlood(player.x,player.y);enemies.splice(i,1);
+    const e=enemies[i];
+    let hitBody=circleVsCircle({x:player.x,y:player.y,r:PLAYER_R},{x:e.x,y:e.y,r:ENEMY_R});
+    if(!hitBody){
+      for(const p of e.parts){
+        if(!p.alive) continue;
+        const px=e.x+p.dx+Math.cos(p.phase)*0.01;
+        const py=e.y+p.dy+Math.sin(p.phase)*0.01;
+        if(circleVsCircle({x:player.x,y:player.y,r:PLAYER_R},{x:px,y:py,r:p.r})){hitBody=true;break;}
+      }
+    }
+    if(hitBody){
+      player.hp-=10;
+      spawnBlood(player.x,player.y);
+      enemies.splice(i,1);
     }
   }
   for(let i=fragItems.length-1;i>=0;i--){
@@ -403,7 +438,12 @@ function loop(ts){
   updateBlood(dt);
   const offX=player.x-0.5,offY=player.y-0.5;
   const rb=bullets.map(b=>({x:b.x-offX,y:b.y-offY}));
-  const re=enemies.map(e=>({x:e.x-offX,y:e.y-offY}));
+  const re=[];
+  enemies.forEach(e=>{
+    re.push({x:e.x-offX,y:e.y-offY});
+    e.parts.forEach(p=>{if(p.alive)re.push({x:e.x+p.dx+Math.cos(p.phase)*0.01-offX,y:e.y+p.dy+Math.sin(p.phase)*0.01-offY});});
+  });
+  const fl=flashes.map(f=>({x:f.x-offX,y:f.y-offY}));
   const bl=getBlood().map(b=>({x:b.x-offX,y:b.y-offY}));
   const fi=fragItems.map(f=>({x:f.x-offX,y:f.y-offY}));
   const mapCells=[];
@@ -412,7 +452,7 @@ function loop(ts){
       mapCells.push({x:c.x+c.w*0.5-offX,y:c.y+c.h*0.5-offY});
     }
   }
-  renderFrame(dt,rb,re,bl,fi,mapCells,guns[currentGun].size,CHUNK_SIZE);
+  renderFrame(dt,rb,re,bl,fi,mapCells,guns[currentGun].size,CHUNK_SIZE,fl);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
