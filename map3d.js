@@ -129,21 +129,23 @@ function computeWalls(cells,cx,cy){
     const x=c.x, y=c.y;
     const lx=x-cx*SIZE;
     const ly=y-cy*SIZE;
+    const cx0=x-0.5;
+    const cy0=y-0.5;
     if(!set.has(x+','+(y-1))){
       const skip=ly===0 && edgeOpenings[0] && lx===edgeCoords[0];
-      if(!skip) walls.push(AABB(x, y-WALL, 1, WALL));
+      if(!skip) walls.push(AABB(cx0, cy0-WALL, 1, WALL));
     }
     if(!set.has(x+','+(y+1))){
       const skip=ly===SIZE-1 && edgeOpenings[2] && lx===edgeCoords[2];
-      if(!skip) walls.push(AABB(x, y+1, 1, WALL));
+      if(!skip) walls.push(AABB(cx0, cy0+1, 1, WALL));
     }
     if(!set.has((x-1)+','+y)){
       const skip=lx===0 && edgeOpenings[3] && ly===edgeCoords[3];
-      if(!skip) walls.push(AABB(x-WALL, y, WALL, 1));
+      if(!skip) walls.push(AABB(cx0-WALL, cy0, WALL, 1));
     }
     if(!set.has((x+1)+','+y)){
       const skip=lx===SIZE-1 && edgeOpenings[1] && ly===edgeCoords[1];
-      if(!skip) walls.push(AABB(x+1, y, WALL, 1));
+      if(!skip) walls.push(AABB(cx0+1, cy0, WALL, 1));
     }
   }
   return walls;
