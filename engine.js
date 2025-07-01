@@ -10,6 +10,8 @@ let camFov = 1, targetFov = 1, baseFov = 1;
 export function initEngine(g,c,dev){
   gl=g;canvas=c;devMode=dev;
   resize();
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   const vs=`#version 300 es\nprecision mediump float;\nin vec2 a_pos;\nuniform float u_size;\nvoid main(){gl_Position=vec4(a_pos*2.0-1.0,0.0,1.0);gl_PointSize=u_size;}`;
   const fs=`#version 300 es\nprecision mediump float;\nuniform vec3 u_color;\nout vec4 outColor;\nvoid main(){outColor=vec4(u_color,1.0);}`;
   program=makeProgram(vs,fs);
