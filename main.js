@@ -142,14 +142,8 @@ let currentGun=0;
 let shootTimer=0;
 const keys={};
 const fpsEl=document.getElementById('fps');
-const bloodCap=document.getElementById('bloodCap');
 const metaEl=document.getElementById('meta');
 const reportEl=document.getElementById('report');
-bloodCap.value=getRules().bloodLimit;
-bloodCap.addEventListener('input',()=>{
-  setPerformanceSettings({bloodLimit:Number(bloodCap.value)});
-  updateMeta();
-});
 
 function updateMeta(){
   metaEl.textContent = 'Rules:\n'+formatRules();

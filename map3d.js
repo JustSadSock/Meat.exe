@@ -1,7 +1,7 @@
 import * as THREE from './three.module.js';
 import { PointerLockControls } from './PointerLockControls.js';
-import { generateTunnelMesh, generateOrgan, setSeed } from './organGen.js';
-import { AABB, circleInsideAABB, clampCircleToAABB } from './geom.js';
+import { generateTunnelMesh, generateOrgan, setSeed, CELLS_PER_CHUNK } from './organGen.js';
+import { AABB, circleVsAABB } from './geom.js';
 
 const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints>0;
 const moveJoy = window.moveJoy || {x:0,y:0};
@@ -19,9 +19,9 @@ let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false;
 let velocity=3;
 let prevTime=performance.now();
 const CHUNK_SIZE=8;
-const CELLS_PER_CHUNK=8;
 const loadedChunks={};
 const loadedCells={};
+const loadedWalls={};
 const PLAYER_R=0.2;
 let chunkX=0,chunkZ=0;
 
@@ -59,6 +59,7 @@ function init(){
   scene.add(level);
   loadedChunks['0,0']=level;
   loadedCells['0,0']=generateOrgan(0,0);
+  loadedWalls['0,0']=computeWalls(loadedCells['0,0']);
 
   // spawn player at the center cell to ensure corridor connectivity
   const cx = CELLS_PER_CHUNK/2;
@@ -119,6 +120,20 @@ function onKeyUp(e){
   }
 }
 
+function computeWalls(cells){
+  const set=new Set(cells.map(c=>c.x+','+c.y));
+  const WALL=0.1;
+  const walls=[];
+  for(const c of cells){
+    const x=c.x, y=c.y;
+    if(!set.has(x+','+(y-1))) walls.push(AABB(x, y-WALL, 1, WALL));
+    if(!set.has(x+','+(y+1))) walls.push(AABB(x, y+1, 1, WALL));
+    if(!set.has((x-1)+','+y)) walls.push(AABB(x-WALL, y, WALL, 1));
+    if(!set.has((x+1)+','+y)) walls.push(AABB(x+1, y, WALL, 1));
+  }
+  return walls;
+}
+
 function animate(){
   requestAnimationFrame(animate);
   const time=performance.now();
@@ -140,31 +155,26 @@ function animate(){
   if(moveLeft) controls.moveRight(-velocity*delta);
   if(moveRight) controls.moveRight(velocity*delta);
 
-  // collision detection
+  // collision detection using wall geometry
   const player={x:camera.position.x,y:camera.position.z,r:PLAYER_R};
-  const allBoxes=[];
-  for(const k in loadedCells){
-    const cells=loadedCells[k];
-    for(const c of cells) {
-      allBoxes.push(AABB(c.x-PLAYER_R, c.y-PLAYER_R, 1+PLAYER_R*2, 1+PLAYER_R*2));
+  for(const k in loadedWalls){
+    for(const wall of loadedWalls[k]){
+      if(circleVsAABB(player, wall)){
+        const cx=Math.max(wall.x, Math.min(player.x, wall.x+wall.w));
+        const cy=Math.max(wall.y, Math.min(player.y, wall.y+wall.h));
+        let dx=player.x-cx, dy=player.y-cy;
+        let dist=Math.hypot(dx,dy) || 1e-6;
+        const overlap=player.r-dist;
+        if(overlap>0){
+          dx/=dist; dy/=dist;
+          player.x+=dx*overlap;
+          player.y+=dy*overlap;
+        }
+      }
     }
   }
-  let inside=false;
-  for(const box of allBoxes){if(circleInsideAABB(player,box)){inside=true;break;}}
-  if(!inside){
-    let near=null,best=1e9;
-    for(const box of allBoxes){
-      const cx=Math.max(box.x,Math.min(player.x,box.x+box.w));
-      const cy=Math.max(box.y,Math.min(player.y,box.y+box.h));
-      const d=(player.x-cx)*(player.x-cx)+(player.y-cy)*(player.y-cy);
-      if(d<best){best=d;near=box;}
-    }
-    if(near){
-      clampCircleToAABB(player,near);
-      camera.position.x=player.x;
-      camera.position.z=player.y;
-    }
-  }
+  camera.position.x=player.x;
+  camera.position.z=player.y;
   const cxi=Math.floor(camera.position.x/CHUNK_SIZE);
   const czi=Math.floor(camera.position.z/CHUNK_SIZE);
   if(cxi!==chunkX||czi!==chunkZ){
@@ -176,6 +186,7 @@ function animate(){
       scene.add(mesh);
       loadedChunks[key]=mesh;
       loadedCells[key]=generateOrgan(cxi,czi);
+      loadedWalls[key]=computeWalls(loadedCells[key]);
     }
   }
   const t=time*0.001;
