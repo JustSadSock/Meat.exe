@@ -25,6 +25,8 @@ const loadedWalls={};
 const PRELOAD_RADIUS=1;
 const PLAYER_R=0.2;
 let chunkX=0,chunkZ=0;
+const SPAWN_INTERVAL=5;
+let spawnTimer=SPAWN_INTERVAL;
 
 init();
 animate();
@@ -73,14 +75,7 @@ function init(){
     camera.position.z = first.y + 0.5;
   }
 
-  const boxGeo = new THREE.BoxGeometry(0.5,0.5,0.5);
-  const boxMat = new THREE.MeshNormalMaterial();
-  for(let i=0;i<5;i++){
-    const box = new THREE.Mesh(boxGeo, boxMat.clone());
-    box.position.set(Math.random()*6-3,0.25,Math.random()*-6);
-    scene.add(box);
-    enemies.push(box);
-  }
+  spawnTimer = SPAWN_INTERVAL;
 
   window.addEventListener('resize', onResize);
   document.addEventListener('keydown', onKeyDown);
@@ -174,6 +169,17 @@ function preloadAround(cx,cz){
   }
 }
 
+function spawnEnemy(x,z){
+  const geo=new THREE.SphereGeometry(0.3,16,16);
+  const mat=new THREE.MeshNormalMaterial();
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.set(x,0.3,z);
+  scene.add(mesh);
+  const enemy={mesh,hp:3,speed:1};
+  enemies.push(enemy);
+  return mesh;
+}
+
 function animate(){
   requestAnimationFrame(animate);
   const time=performance.now();
@@ -221,6 +227,21 @@ function animate(){
     chunkX=cxi;chunkZ=czi;
     preloadAround(cxi,czi);
   }
+  spawnTimer-=delta;
+  if(spawnTimer<=0){
+    spawnTimer=SPAWN_INTERVAL;
+    const ang=Math.random()*Math.PI*2;
+    const dist=CHUNK_SIZE*0.75;
+    spawnEnemy(camera.position.x+Math.cos(ang)*dist,
+               camera.position.z+Math.sin(ang)*dist);
+  }
+  enemies.forEach(e=>{
+    const dx=camera.position.x-e.mesh.position.x;
+    const dz=camera.position.z-e.mesh.position.z;
+    const l=Math.hypot(dx,dz)||1e-6;
+    e.mesh.position.x+=dx/l*e.speed*delta;
+    e.mesh.position.z+=dz/l*e.speed*delta;
+  });
   const t=time*0.001;
   const p=0.5+Math.sin(t*2)*0.5;
   if(organMat){
@@ -232,18 +253,24 @@ function animate(){
     light.position.copy(camera.position);
   }
   raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-  const hits = raycaster.intersectObjects(enemies);
-  if(hits.length>0){
-    crosshair.style.color='#ff0040';
-    const now=performance.now();
-    if(now-lastShot>500){
-      const enemy=hits[0].object;
-      scene.remove(enemy);
-      enemies.splice(enemies.indexOf(enemy),1);
-      lastShot=now;
+  const hits = raycaster.intersectObjects(enemies.map(e=>e.mesh));
+    if(hits.length>0){
+      crosshair.style.color='#ff0040';
+      const now=performance.now();
+      if(now-lastShot>500){
+        const mesh=hits[0].object;
+        const enemy=enemies.find(e=>e.mesh===mesh);
+        if(enemy){
+          enemy.hp-=1;
+          if(enemy.hp<=0){
+            scene.remove(enemy.mesh);
+            enemies.splice(enemies.indexOf(enemy),1);
+          }
+        }
+        lastShot=now;
+      }
+    }else{
+      crosshair.style.color='';
     }
-  }else{
-    crosshair.style.color='';
-  }
   renderer.render(scene, camera);
 }
