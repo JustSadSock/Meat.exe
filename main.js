@@ -178,7 +178,7 @@ function fire(){
 function makeEnemy(type,x,y,immortal=false){
   const base=enemyTypes[type]||enemyTypes.normal;
   const mult=getRules().enemySpeed||1;
-  return {x,y,immortal,type,speed:base.speed*mult,hp:base.hp,phase:1,phantom:base.phantom,boss:base.boss,life:base.life||Infinity};
+  return {x,y,immortal,type,speed:base.speed*mult,hp:base.hp,phase:1,phantom:base.phantom,boss:base.boss,life:base.life||Infinity,wobble:Math.random()*Math.PI*2};
 }
 
 function spawnWave(d,type="normal",immortal=false){
@@ -303,7 +303,14 @@ function loop(ts){
       player.x=playerCirc.x;player.y=playerCirc.y;
     }
   }
-  enemies.forEach(e=>{const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;e.x+=dx/l*e.speed*dt;e.y+=dy/l*e.speed*dt;e.life-=dt;
+  enemies.forEach(e=>{
+    const dx=player.x-e.x,dy=player.y-e.y,l=Math.hypot(dx,dy)||1;
+    e.wobble+=dt;
+    const ang=Math.atan2(dy,dx)+Math.PI/2;
+    const off=Math.sin(e.wobble*3.0)*0.05;
+    e.x+=(dx/l+Math.cos(ang)*off)*e.speed*dt;
+    e.y+=(dy/l+Math.sin(ang)*off)*e.speed*dt;
+    e.life-=dt;
     const circ={x:e.x,y:e.y,r:ENEMY_R};
     let inside=false;
     for(const box of allBoxes){if(circleInsideAABB(circ,box)){inside=true;break;}}

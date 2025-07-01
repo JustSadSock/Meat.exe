@@ -4,6 +4,7 @@ let gl, canvas, devMode;
 let glitch = false, glitchTime=0;
 let time = 0;
 let program, buf, locPos, locColor, locSize;
+let enemyProgram, enemyLocPos, enemyLocColor, enemyLocSize;
 let camFov = 1, targetFov = 1, baseFov = 1;
 
 export function initEngine(g,c,dev){
@@ -15,6 +16,12 @@ export function initEngine(g,c,dev){
   locPos=gl.getAttribLocation(program,'a_pos');
   locColor=gl.getUniformLocation(program,'u_color');
   locSize=gl.getUniformLocation(program,'u_size');
+
+  const fsEnemy=`#version 300 es\nprecision mediump float;\nuniform vec3 u_color;\nout vec4 outColor;\nvoid main(){vec2 c=gl_PointCoord*2.0-1.0;float v=step(abs(c.x),0.25);float h=step(abs(c.y),0.25);float a=max(v,h);outColor=vec4(u_color,a);}`;
+  enemyProgram=makeProgram(vs,fsEnemy);
+  enemyLocPos=gl.getAttribLocation(enemyProgram,'a_pos');
+  enemyLocColor=gl.getUniformLocation(enemyProgram,'u_color');
+  enemyLocSize=gl.getUniformLocation(enemyProgram,'u_size');
   buf=gl.createBuffer();
   gl.clearColor(0,0,0,1);
 }
@@ -60,6 +67,25 @@ function drawPoints(arr,color,size){
   gl.drawArrays(gl.POINTS,0,arr.length);
 }
 
+function drawEnemies(arr,color,size){
+  if(arr.length===0)return;
+  const verts=new Float32Array(arr.length*2);
+  for(let i=0;i<arr.length;i++){
+    const sx=(arr[i].x-0.5)/camFov+0.5;
+    const sy=(arr[i].y-0.5)/camFov+0.5;
+    verts[i*2]=sx*2-1;
+    verts[i*2+1]=1-sy*2;
+  }
+  gl.useProgram(enemyProgram);
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,verts,gl.STREAM_DRAW);
+  gl.enableVertexAttribArray(enemyLocPos);
+  gl.vertexAttribPointer(enemyLocPos,2,gl.FLOAT,false,0,0);
+  gl.uniform3fv(enemyLocColor,color);
+  gl.uniform1f(enemyLocSize,size);
+  gl.drawArrays(gl.POINTS,0,arr.length);
+}
+
 export function renderFrame(dt,bullets,enemies,blood,items,map,bulletSize,mapCellSize){
   time += dt;
   baseFov=getRules().FOV||1;
@@ -76,7 +102,8 @@ export function renderFrame(dt,bullets,enemies,blood,items,map,bulletSize,mapCel
   gl.clear(gl.COLOR_BUFFER_BIT);
   const cellPixels = mapCellSize/camFov*canvas.height;
   drawPoints(map,[0.3,0.3,0.3],cellPixels);
-  drawPoints(enemies,[0,pulse,0],16.0);
+  const eCol=[0.6+Math.sin(time*2.0)*0.4,0,0];
+  drawEnemies(enemies,eCol,18.0);
   drawPoints(bullets,[1,0,0.3],bulletSize);
   drawPoints(items,[0,0.8,1.0],8.0);
   drawPoints(blood,[0.8*pulse,0,0],4.0);
