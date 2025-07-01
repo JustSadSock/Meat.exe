@@ -37,6 +37,7 @@ function init(){
     document.body.appendChild(canvas);
   }
   renderer = new THREE.WebGLRenderer({canvas});
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   crosshair = document.getElementById('crosshair');
   raycaster = new THREE.Raycaster();
@@ -89,6 +90,7 @@ function init(){
 function onResize(){
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
