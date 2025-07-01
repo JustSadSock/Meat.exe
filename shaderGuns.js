@@ -46,7 +46,8 @@ void main(){
     energyCost:1,
     lvl:1,
     damage:1,
-    size:8
+    size:8,
+    effect:'normal'
   },
   {
     name:'Blaster',
@@ -61,7 +62,8 @@ void main(){
     energyCost:2,
     lvl:1,
     damage:1,
-    size:10
+    size:10,
+    effect:'burning'
   },
   {
     name:'Laser',
@@ -76,7 +78,8 @@ void main(){
     energyCost:3,
     lvl:1,
     damage:1,
-    size:6
+    size:6,
+    effect:'frozen'
   }
 ];
 

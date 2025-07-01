@@ -36,3 +36,24 @@ export function updateBlood(dt){
 export function getBlood(){
   return blood;
 }
+
+export function applyBloodEffects(enemies, player, dt){
+  const r2 = 0.0025; // radius^2 for effect area
+  for(const b of blood){
+    if(b.state==='normal') continue;
+    for(const e of enemies){
+      const dx=e.x-b.x, dy=e.y-b.y;
+      if(dx*dx+dy*dy<r2){
+        if(b.state==='burning') e.hp-=dt*5;
+        else if(b.state==='acidic') e.hp-=dt*3;
+        else if(b.state==='frozen') e.speed*=0.9;
+      }
+    }
+    if(player){
+      const dx=player.x-b.x, dy=player.y-b.y;
+      if(dx*dx+dy*dy<r2){
+        if(b.state==='burning' || b.state==='acidic') player.hp-=dt*2;
+      }
+    }
+  }
+}
