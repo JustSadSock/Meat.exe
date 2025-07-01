@@ -54,6 +54,7 @@ function mulberry32(a){
   };
 }
 
+// Determine if a chunk edge is open for corridor generation
 function edgeOpen(cx,cy,dir){
   // dir:0=N,1=E,2=S,3=W
   // previously edge openings were random which could isolate rooms. always open
@@ -61,6 +62,7 @@ function edgeOpen(cx,cy,dir){
   return 1;
 }
 
+// Get corridor coordinate along a chunk edge
 function edgeCoord(cx,cy,dir){
   let seed;
   if(dir===0) seed=(cx*73856093 ^ cy*19349663 ^ worldSeed ^ 0)>>>0;
@@ -130,6 +132,9 @@ export function generateTunnelMesh(cx,cy,THREE){
   const floorMat=new THREE.MeshStandardMaterial({color:0x772222, roughness:0.8, metalness:0.1, emissive:0x330000});
   const wallMat=new THREE.MeshStandardMaterial({color:0x773333, roughness:0.9, metalness:0.1, emissive:0x220000});
   const cellSet=new Set(cells.map(c=>c.x+','+c.y));
+  const SIZE=CELLS_PER_CHUNK;
+  const edgeCoords=[edgeCoord(cx,cy,0),edgeCoord(cx,cy,1),edgeCoord(cx,cy,2),edgeCoord(cx,cy,3)];
+  const edgeOpenings=[edgeOpen(cx,cy,0),edgeOpen(cx,cy,1),edgeOpen(cx,cy,2),edgeOpen(cx,cy,3)];
   for(const c of cells){
     const fx=c.x;
     const fz=c.y;
@@ -137,16 +142,30 @@ export function generateTunnelMesh(cx,cy,THREE){
     floor.position.set(fx,0,fz);
     group.add(floor);
     const dirs=[[1,0],[0,1],[-1,0],[0,-1]];
+    const lx=c.x-cx*SIZE;
+    const ly=c.y-cy*SIZE;
     for(let i=0;i<4;i++){
       const dx=dirs[i][0],dy=dirs[i][1];
-      if(!cellSet.has((c.x+dx)+','+(c.y+dy))){
-        const wall=new THREE.Mesh(wallGeo,wallMat);
-        wall.position.set(fx+dx*0.5,1,fz+dy*0.5);
-        wall.rotation.y=i===0?-Math.PI/2:i===2?Math.PI/2:i===1?Math.PI:0;
-        group.add(wall);
+      const nx=c.x+dx, ny=c.y+dy;
+      let neighbor=cellSet.has(nx+','+ny);
+      if(!neighbor){
+        let skip=false;
+        if(i===0) skip=lx===SIZE-1 && edgeOpenings[1] && ly===edgeCoords[1];
+        else if(i===1) skip=ly===SIZE-1 && edgeOpenings[2] && lx===edgeCoords[2];
+        else if(i===2) skip=lx===0 && edgeOpenings[3] && ly===edgeCoords[3];
+        else if(i===3) skip=ly===0 && edgeOpenings[0] && lx===edgeCoords[0];
+        if(!skip){
+          const wall=new THREE.Mesh(wallGeo,wallMat);
+          wall.position.set(fx+dx*0.5,1,fz+dy*0.5);
+          wall.rotation.y=i===0?-Math.PI/2:i===2?Math.PI/2:i===1?Math.PI:0;
+          group.add(wall);
+        }
       }
     }
   }
   group.userData.materials={floor:floorMat,wall:wallMat};
   return group;
 }
+
+// Expose helpers for other modules (e.g. collision and rendering)
+export { edgeOpen, edgeCoord };
