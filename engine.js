@@ -19,7 +19,7 @@ export function initEngine(g,c,dev){
   locColor=gl.getUniformLocation(program,'u_color');
   locSize=gl.getUniformLocation(program,'u_size');
 
-  const fsEnemy=`#version 300 es\nprecision mediump float;\nuniform vec3 u_color;\nout vec4 outColor;\nvoid main(){vec2 c=gl_PointCoord*2.0-1.0;float v=step(abs(c.x),0.25);float h=step(abs(c.y),0.25);float a=max(v,h);outColor=vec4(u_color,a);}`;
+  const fsEnemy=`#version 300 es\nprecision mediump float;\nuniform vec3 u_color;\nout vec4 outColor;\nvoid main(){\n    vec2 c=gl_PointCoord*2.0-1.0;\n    float v=step(abs(c.x),0.25);\n    float h=step(abs(c.y),0.25);\n    float a=max(v,h);\n    if(a<0.5) discard;\n    outColor=vec4(u_color,1.0);\n  }`;
   enemyProgram=makeProgram(vs,fsEnemy);
   enemyLocPos=gl.getAttribLocation(enemyProgram,'a_pos');
   enemyLocColor=gl.getUniformLocation(enemyProgram,'u_color');
