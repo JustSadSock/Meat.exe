@@ -39,6 +39,7 @@ class SimplexNoise{
 
 let simplex=new SimplexNoise(0);
 let worldSeed=0;
+export const CELLS_PER_CHUNK=8;
 export function setSeed(s){
   simplex=new SimplexNoise(s);
   worldSeed=s>>>0;
@@ -60,6 +61,16 @@ function edgeOpen(cx,cy,dir){
   return 1;
 }
 
+function edgeCoord(cx,cy,dir){
+  let seed;
+  if(dir===0) seed=(cx*73856093 ^ cy*19349663 ^ worldSeed ^ 0)>>>0;
+  else if(dir===2) seed=(cx*73856093 ^ (cy+1)*19349663 ^ worldSeed ^ 0)>>>0;
+  else if(dir===1) seed=((cx+1)*73856093 ^ cy*19349663 ^ worldSeed ^ 1)>>>0;
+  else seed=(cx*73856093 ^ cy*19349663 ^ worldSeed ^ 1)>>>0;
+  const rnd=mulberry32(seed);
+  return Math.floor(rnd()*CELLS_PER_CHUNK);
+}
+
 function listFirst(set){
   for(const v of set) return v;
   return null;
@@ -68,7 +79,7 @@ function listFirst(set){
 export function generateOrgan(cx,cy){
   const cells=[];
   const cellSet=new Set();
-  const SIZE=8; // cells per chunk side
+  const SIZE=CELLS_PER_CHUNK; // cells per chunk side
   const baseX=cx*SIZE;
   const baseY=cy*SIZE;
   const rnd=mulberry32((cx*73856093^cy*19349663^worldSeed)>>>0);
@@ -96,8 +107,8 @@ export function generateOrgan(cx,cy){
   const dirs=[[0,-1],[1,0],[0,1],[-1,0]];
   for(let i=0;i<4;i++){
     if(edgeOpen(cx,cy,i)){
-      const ex = i===1?SIZE-1:i===3?0:Math.floor(rnd()*SIZE);
-      const ey = i===0?0:i===2?SIZE-1:Math.floor(rnd()*SIZE);
+      const ex = i===1?SIZE-1:i===3?0:edgeCoord(cx,cy,i);
+      const ey = i===0?0:i===2?SIZE-1:edgeCoord(cx,cy,i);
       let best=centers[0],bestDist=Infinity;
       for(const c of centers){
         const d=Math.abs(c.x-ex)+Math.abs(c.y-ey);

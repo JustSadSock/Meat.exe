@@ -2,8 +2,6 @@ html,body{width:100vw;height:100vh;margin:0;overflow:hidden;touch-action:none;ba
 canvas{position:absolute;top:0;left:0;display:block;width:100%;height:100%;}
 .panel{position:absolute;padding:4px 8px;background:rgba(0,0,0,0.3);backdrop-filter:blur(6px);text-shadow:0 0 6px currentColor;border:1px solid rgba(255,255,255,0.1);white-space:pre}
 #meta{top:4px;left:4px}
-#perf{top:26px;left:4px}
-#perf input{width:80px}
 #fps{bottom:4px;right:4px}
 #report{top:40%;left:50%;transform:translate(-50%,-50%);text-align:center}
 #shaderEdit{position:absolute;bottom:40px;left:4px;width:50%;height:30%;z-index:1000;background:#000;color:#0f0;font-family:monospace}
