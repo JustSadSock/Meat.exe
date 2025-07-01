@@ -103,12 +103,12 @@ loadedChunks['0,0']=firstCells.map(t=>
        CHUNK_SIZE+PLAYER_R*2));
 
 const enemyTypes={
-  normal:{speed:0.1,hp:10},
-  fast:{speed:0.15,hp:5},
-  tank:{speed:0.07,hp:20},
-  phantom:{speed:0.12,hp:1,phantom:true,life:5},
-  mini:{speed:0.08,hp:50,boss:true},
-  hashHeart:{speed:0.05,hp:100,boss:true}
+  normal:{speed:0.1,hp:10,color:[0.8,0,0]},
+  fast:{speed:0.15,hp:5,color:[1,0,0.8]},
+  tank:{speed:0.07,hp:20,color:[0.8,0.4,0]},
+  phantom:{speed:0.12,hp:1,phantom:true,life:5,color:[0.3,0.3,1]},
+  mini:{speed:0.08,hp:50,boss:true,color:[0,1,0]},
+  hashHeart:{speed:0.05,hp:100,boss:true,color:[1,0,0.4]}
 };
 
 let spawn={x:(CELLS_PER_CHUNK/2+0.5)*CHUNK_SIZE,y:(CELLS_PER_CHUNK/2+0.5)*CHUNK_SIZE};
@@ -188,7 +188,7 @@ function makeEnemy(type,x,y,immortal=false){
     {name:'lLeg',dx:-ENEMY_R*0.6,dy:ENEMY_R*1.2,r:partR,hp:3,alive:true,phase:Math.random()*Math.PI*2},
     {name:'rLeg',dx:ENEMY_R*0.6,dy:ENEMY_R*1.2,r:partR,hp:3,alive:true,phase:Math.random()*Math.PI*2}
   ];
-  return {x,y,immortal,type,speed:base.speed*mult,hp:base.hp,phase:1,phantom:base.phantom,boss:base.boss,life:base.life||Infinity,wobble:Math.random()*Math.PI*2,parts};
+  return {x,y,immortal,type,speed:base.speed*mult,hp:base.hp,phase:1,phantom:base.phantom,boss:base.boss,life:base.life||Infinity,wobble:Math.random()*Math.PI*2,parts,color:base.color||[0.6,0,0]};
 }
 
 function spawnWave(d,type="normal",immortal=false){
@@ -439,11 +439,17 @@ function loop(ts){
   applyBloodEffects(enemies,player,dt);
   const offX=player.x-0.5,offY=player.y-0.5;
   const rb=bullets.map(b=>({x:b.x-offX,y:b.y-offY}));
-  const re=[];
+  const groups={};
   enemies.forEach(e=>{
-    re.push({x:e.x-offX,y:e.y-offY});
-    e.parts.forEach(p=>{if(p.alive)re.push({x:e.x+p.dx+Math.cos(p.phase)*0.01-offX,y:e.y+p.dy+Math.sin(p.phase)*0.01-offY});});
+    if(e.phantom && Math.sin(e.life*10)>0) return; // flicker
+    const key=e.color.join(',');
+    if(!groups[key]) groups[key]={color:e.color,points:[]};
+    groups[key].points.push({x:e.x-offX,y:e.y-offY});
+    e.parts.forEach(p=>{
+      if(p.alive) groups[key].points.push({x:e.x+p.dx+Math.cos(p.phase)*0.01-offX,y:e.y+p.dy+Math.sin(p.phase)*0.01-offY});
+    });
   });
+  const re=Object.values(groups);
   const fl=flashes.map(f=>({x:f.x-offX,y:f.y-offY}));
   const bl=getBlood().map(b=>({x:b.x-offX,y:b.y-offY}));
   const fi=fragItems.map(f=>({x:f.x-offX,y:f.y-offY}));

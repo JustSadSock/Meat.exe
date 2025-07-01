@@ -86,7 +86,8 @@ function drawEnemies(arr,color,size){
   gl.drawArrays(gl.POINTS,0,arr.length);
 }
 
-export function renderFrame(dt,bullets,enemies,blood,items,map,bulletSize,mapCellSize,flashes=[]){
+// enemyGroups: array of {color:[r,g,b], points:[{x,y},...]}
+export function renderFrame(dt,bullets,enemyGroups,blood,items,map,bulletSize,mapCellSize,flashes=[]){
   time += dt;
   baseFov=getRules().FOV||1;
   const pulse = 0.5 + Math.sin(time*3.0)*0.5;
@@ -102,8 +103,10 @@ export function renderFrame(dt,bullets,enemies,blood,items,map,bulletSize,mapCel
   gl.clear(gl.COLOR_BUFFER_BIT);
   const cellPixels = mapCellSize/camFov*canvas.height;
   drawPoints(map,[0.3,0.3,0.3],cellPixels);
-  const eCol=[0.6+Math.sin(time*2.0)*0.4,0,0];
-  drawEnemies(enemies,eCol,18.0);
+  (enemyGroups||[]).forEach(g=>{
+    const col=g.color||[0.6,0,0];
+    drawEnemies(g.points,col,18.0);
+  });
   drawPoints(bullets,[1,0,0.3],bulletSize);
   drawPoints(flashes,[1,0.8,0],bulletSize*2.0);
   drawPoints(items,[0,0.8,1.0],8.0);
