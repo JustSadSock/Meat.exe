@@ -41,10 +41,22 @@ function resize(){
 function makeProgram(vsSrc,fsSrc){
   const vs=gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(vs,vsSrc);gl.compileShader(vs);
+  const vsOk = gl.getShaderParameter(vs, gl.COMPILE_STATUS);
+  if(devMode && !vsOk){
+    console.error(gl.getShaderInfoLog(vs));
+  }
   const fs=gl.createShader(gl.FRAGMENT_SHADER);
   gl.shaderSource(fs,fsSrc);gl.compileShader(fs);
+  const fsOk = gl.getShaderParameter(fs, gl.COMPILE_STATUS);
+  if(devMode && !fsOk){
+    console.error(gl.getShaderInfoLog(fs));
+  }
   const p=gl.createProgram();
   gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);
+  const linkOk = gl.getProgramParameter(p, gl.LINK_STATUS);
+  if(devMode && !linkOk){
+    console.error(gl.getProgramInfoLog(p));
+  }
   return p;
 }
 
