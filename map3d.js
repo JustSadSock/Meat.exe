@@ -119,7 +119,7 @@ function onKeyUp(e){
   }
 }
 
-function computeWalls(cells,cx,cy){
+export function computeWalls(cells,cx,cy){
   const set=new Set(cells.map(c=>c.x+','+c.y));
   const WALL=0.1;
   const walls=[];
