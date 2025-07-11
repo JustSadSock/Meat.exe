@@ -131,7 +131,8 @@ export function generateTunnelMesh(cx,cy,THREE){
   if(!floorGeo){
     floorGeo=new THREE.PlaneGeometry(1,1);
     floorGeo.rotateX(-Math.PI/2);
-    wallGeo=new THREE.PlaneGeometry(1,2);
+    wallGeo=new THREE.BoxGeometry(1,2,0.1);
+    wallGeo.translate(0,1,0);
   }
   if(!floorMat){
     floorMat=new THREE.MeshStandardMaterial({color:0x7a0a0a,emissive:0x110000,side:THREE.DoubleSide});
