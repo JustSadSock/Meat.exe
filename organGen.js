@@ -135,8 +135,8 @@ export function generateTunnelMesh(cx,cy,THREE){
     wallGeo.translate(0,1,0);
   }
   if(!floorMat){
-    floorMat=new THREE.MeshStandardMaterial({color:0x7a0a0a,emissive:0x110000,side:THREE.DoubleSide});
-    wallMat=new THREE.MeshStandardMaterial({color:0x7a0a0a,emissive:0x110000,side:THREE.DoubleSide});
+    floorMat=new THREE.MeshStandardMaterial({color:0xb01515,emissive:0x300000,side:THREE.DoubleSide});
+    wallMat=new THREE.MeshStandardMaterial({color:0xb01515,emissive:0x300000,side:THREE.DoubleSide});
   }
   const group=new THREE.Group();
   group.castShadow=group.receiveShadow=true;
