@@ -1,4 +1,5 @@
 let gl;
+const DEV = new URLSearchParams(location.search).get('dev') === '1';
 
 // collected GLSL fragments stored in inventory slots
 export let fragmentInventory = [];
@@ -92,21 +93,43 @@ export function initGuns(glCtx){
 function compileGun(g){
   if(!gl) return;
   if(g.prog) gl.deleteProgram(g.prog);
-  const vs=`#version 300 es
+
+  // vertex shader
+  const vs = `#version 300 es
 precision mediump float;
 in vec2 a_pos;
-void main(){gl_Position=vec4(a_pos,0.0,1.0);} `;
-  const fs=`#version 300 es
+void main(){
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
+
+  // fragment shader
+  const fs = `#version 300 es
 precision highp float;
 out vec4 outColor;
 ${g.fragSrc}`;
-  const vsObj=gl.createShader(gl.VERTEX_SHADER);
-  gl.shaderSource(vsObj,vs);gl.compileShader(vsObj);
-  const fsObj=gl.createShader(gl.FRAGMENT_SHADER);
-  gl.shaderSource(fsObj,fs);gl.compileShader(fsObj);
-  const prog=gl.createProgram();
-  gl.attachShader(prog,vsObj);gl.attachShader(prog,fsObj);gl.linkProgram(prog);
-  g.prog=prog;
+
+  const vsObj = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vsObj, vs);
+  gl.compileShader(vsObj);
+  if(DEV && !gl.getShaderParameter(vsObj, gl.COMPILE_STATUS)){
+    console.error(gl.getShaderInfoLog(vsObj));
+  }
+
+  const fsObj = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fsObj, fs);
+  gl.compileShader(fsObj);
+  if(DEV && !gl.getShaderParameter(fsObj, gl.COMPILE_STATUS)){
+    console.error(gl.getShaderInfoLog(fsObj));
+  }
+
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vsObj);
+  gl.attachShader(prog, fsObj);
+  gl.linkProgram(prog);
+  if(DEV && !gl.getProgramParameter(prog, gl.LINK_STATUS)){
+    console.error(gl.getProgramInfoLog(prog));
+  }
+  g.prog = prog;
 }
 
 export function reloadShader(src,index=0){

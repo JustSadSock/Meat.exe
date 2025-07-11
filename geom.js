@@ -4,15 +4,13 @@ export function AABB(x,y,w,h){
 
 export function circleVsCircle(a,b){
   const dx=a.x-b.x, dy=a.y-b.y;
-  const r=a.r+b.r;
-  return dx*dx+dy*dy<r*r;
+  return dx*dx+dy*dy <= (a.r+b.r)**2;
 }
 
 export function circleVsAABB(c,a){
-  const cx=Math.max(a.x,Math.min(c.x,a.x+a.w));
-  const cy=Math.max(a.y,Math.min(c.y,a.y+a.h));
-  const dx=c.x-cx, dy=c.y-cy;
-  return dx*dx+dy*dy<c.r*c.r;
+  const nx=Math.max(a.x,Math.min(c.x,a.x+a.w));
+  const ny=Math.max(a.y,Math.min(c.y,a.y+a.h));
+  return (c.x-nx)**2 + (c.y-ny)**2 <= c.r**2;
 }
 
 export function circleInsideAABB(c,a){
@@ -21,6 +19,6 @@ export function circleInsideAABB(c,a){
 }
 
 export function clampCircleToAABB(c,a){
-  c.x=Math.max(a.x+c.r,Math.min(a.x+a.w-c.r,c.x));
-  c.y=Math.max(a.y+c.r,Math.min(a.y+a.h-c.r,c.y));
+  c.x=Math.max(a.x+c.r,Math.min(c.x,a.x+a.w-c.r));
+  c.y=Math.max(a.y+c.r,Math.min(c.y,a.y+a.h-c.r));
 }

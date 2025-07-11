@@ -14,6 +14,7 @@ function getAimJoy(){
 
 let camera, scene, renderer, controls;
 let enemies = [];
+let enemyMat;
 let light;
 let organMat;
 let raycaster;
@@ -192,8 +193,8 @@ function cleanupChunks(cx,cz){
 
 function spawnEnemy(x,z){
   const geo=new THREE.SphereGeometry(0.3,16,16);
-  const mat=new THREE.MeshNormalMaterial();
-  const mesh=new THREE.Mesh(geo,mat);
+  if(!enemyMat) enemyMat=new THREE.MeshStandardMaterial({color:0xff0000});
+  const mesh=new THREE.Mesh(geo,enemyMat);
   mesh.position.set(x,0.3,z);
   mesh.userData = { hp: 3, speed: 1 };
   scene.add(mesh);
@@ -203,6 +204,13 @@ function spawnEnemy(x,z){
 
 export function update3D(delta){
   const time=performance.now();
+  enemies = enemies.filter(e=>{
+    if(e.userData.hp<=0){
+      scene.remove(e);
+      return false;
+    }
+    return true;
+  });
   if(hasTouch){
     const rotSpeed=2.5;
     const euler=new THREE.Euler(0,0,0,'YXZ');
