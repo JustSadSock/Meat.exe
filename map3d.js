@@ -195,9 +195,9 @@ function spawnEnemy(x,z){
   const mat=new THREE.MeshNormalMaterial();
   const mesh=new THREE.Mesh(geo,mat);
   mesh.position.set(x,0.3,z);
+  mesh.userData = { hp: 3, speed: 1 };
   scene.add(mesh);
-  const enemy={mesh,hp:3,speed:1};
-  enemies.push(enemy);
+  enemies.push(mesh);
   return mesh;
 }
 
@@ -257,11 +257,11 @@ export function update3D(delta){
                camera.position.z+Math.sin(ang)*dist);
   }
   enemies.forEach(e=>{
-    const dx=camera.position.x-e.mesh.position.x;
-    const dz=camera.position.z-e.mesh.position.z;
+    const dx=camera.position.x-e.position.x;
+    const dz=camera.position.z-e.position.z;
     const l=Math.hypot(dx,dz)||1e-6;
-    e.mesh.position.x+=dx/l*e.speed*delta;
-    e.mesh.position.z+=dz/l*e.speed*delta;
+    e.position.x+=dx/l*e.userData.speed*delta;
+    e.position.z+=dz/l*e.userData.speed*delta;
   });
   const t=time*0.001;
   const p=0.5+Math.sin(t*2)*0.5;
@@ -274,18 +274,17 @@ export function update3D(delta){
     light.position.copy(camera.position);
   }
   raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-  const hits = raycaster.intersectObjects(enemies.map(e=>e.mesh));
+  const hits = raycaster.intersectObjects(enemies);
     if(hits.length>0){
       crosshair.style.color='#ff0040';
       const now=performance.now();
       if(now-lastShot>500){
         const mesh=hits[0].object;
-        const enemy=enemies.find(e=>e.mesh===mesh);
-        if(enemy){
-          enemy.hp-=1;
-          if(enemy.hp<=0){
-            scene.remove(enemy.mesh);
-            enemies.splice(enemies.indexOf(enemy),1);
+        if(enemies.includes(mesh)){
+          mesh.userData.hp-=1;
+          if(mesh.userData.hp<=0){
+            scene.remove(mesh);
+            enemies.splice(enemies.indexOf(mesh),1);
           }
         }
         lastShot=now;
