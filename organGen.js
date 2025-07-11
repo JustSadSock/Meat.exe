@@ -79,9 +79,9 @@ function listFirst(set){
   return null;
 }
 
-export const floorGeo = new THREE.PlaneGeometry(1,1);
+const floorGeo = new THREE.PlaneGeometry(1,1);
 floorGeo.rotateX(-Math.PI/2);
-export const wallGeo = new THREE.PlaneGeometry(1,2);
+const wallGeo = new THREE.PlaneGeometry(1,2);
 
 export function generateOrgan(cx,cy){
   const cells=[];
