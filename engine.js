@@ -38,23 +38,31 @@ function resize(){
   gl.viewport(0,0,canvas.width,canvas.height);
 }
 
-function makeProgram(vsSrc,fsSrc){
-  const vs=gl.createShader(gl.VERTEX_SHADER);
-  gl.shaderSource(vs,vsSrc);gl.compileShader(vs);
-  const vsOk = gl.getShaderParameter(vs, gl.COMPILE_STATUS);
-  if(devMode && !vsOk){
-    console.error(gl.getShaderInfoLog(vs));
+function makeProgram(vsSrc, fsSrc){
+  const vs = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vs, vsSrc);
+  gl.compileShader(vs);
+  let ok = gl.getShaderParameter(vs, gl.COMPILE_STATUS);
+  if(!ok){
+    const log = gl.getShaderInfoLog(vs);
+    if(devMode) throw new Error(log);
   }
-  const fs=gl.createShader(gl.FRAGMENT_SHADER);
-  gl.shaderSource(fs,fsSrc);gl.compileShader(fs);
-  const fsOk = gl.getShaderParameter(fs, gl.COMPILE_STATUS);
-  if(devMode && !fsOk){
-    console.error(gl.getShaderInfoLog(fs));
+
+  const fs = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fs, fsSrc);
+  gl.compileShader(fs);
+  ok = gl.getShaderParameter(fs, gl.COMPILE_STATUS);
+  if(!ok){
+    const log = gl.getShaderInfoLog(fs);
+    if(devMode) throw new Error(log);
   }
-  const p=gl.createProgram();
-  gl.attachShader(p,vs);gl.attachShader(p,fs);gl.linkProgram(p);
-  const linkOk = gl.getProgramParameter(p, gl.LINK_STATUS);
-  if(devMode && !linkOk){
+
+  const p = gl.createProgram();
+  gl.attachShader(p, vs);
+  gl.attachShader(p, fs);
+  gl.linkProgram(p);
+  ok = gl.getProgramParameter(p, gl.LINK_STATUS);
+  if(devMode && !ok){
     console.error(gl.getProgramInfoLog(p));
   }
   return p;

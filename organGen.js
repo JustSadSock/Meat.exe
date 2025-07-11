@@ -1,5 +1,4 @@
 // 2D Simplex noise with deterministic seed. Based on Stefan Gustavson's algo
-import * as THREE from './three.module.js';
 class SimplexNoise{
   constructor(seed=0){
     this.p=new Uint8Array(256);
@@ -79,9 +78,8 @@ function listFirst(set){
   return null;
 }
 
-const floorGeo = new THREE.PlaneGeometry(1,1);
-floorGeo.rotateX(-Math.PI/2);
-const wallGeo = new THREE.PlaneGeometry(1,2);
+let floorGeo, wallGeo;
+let floorMat, wallMat;
 
 export function generateOrgan(cx,cy){
   const cells=[];
@@ -130,9 +128,17 @@ export function generateOrgan(cx,cy){
 // Helper for the Three.js renderer. Builds a tunnel mesh for a chunk.
 export function generateTunnelMesh(cx,cy,THREE){
   const cells=generateOrgan(cx,cy);
+  if(!floorGeo){
+    floorGeo=new THREE.PlaneGeometry(1,1);
+    floorGeo.rotateX(-Math.PI/2);
+    wallGeo=new THREE.PlaneGeometry(1,2);
+  }
+  if(!floorMat){
+    floorMat=new THREE.MeshStandardMaterial({color:0x7a0a0a,emissive:0x110000,side:THREE.DoubleSide});
+    wallMat=new THREE.MeshStandardMaterial({color:0x7a0a0a,emissive:0x110000,side:THREE.DoubleSide});
+  }
   const group=new THREE.Group();
-  const floorMat=new THREE.MeshStandardMaterial({color:0x772222, roughness:0.8, metalness:0.1, emissive:0x330000});
-  const wallMat=new THREE.MeshStandardMaterial({color:0x773333, roughness:0.9, metalness:0.1, emissive:0x220000});
+  group.castShadow=group.receiveShadow=true;
   const cellSet=new Set(cells.map(c=>c.x+','+c.y));
   const SIZE=CELLS_PER_CHUNK;
   const edgeCoords=[edgeCoord(cx,cy,0),edgeCoord(cx,cy,1),edgeCoord(cx,cy,2),edgeCoord(cx,cy,3)];
@@ -170,4 +176,4 @@ export function generateTunnelMesh(cx,cy,THREE){
 }
 
 // Expose helpers for other modules (e.g. collision and rendering)
-export { edgeOpen, edgeCoord, floorGeo, wallGeo };
+export { edgeOpen, edgeCoord };
