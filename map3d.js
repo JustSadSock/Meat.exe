@@ -64,6 +64,7 @@ export function init3D(){
   level = loadedChunks['0,0'];
   organMat = level.userData.materials.floor;
   preloadAround(0,0);
+  cleanupChunks(0,0);
 
   // spawn player at the center cell to ensure corridor connectivity
   const cx = CELLS_PER_CHUNK/2;
@@ -172,6 +173,23 @@ function preloadAround(cx,cz){
   }
 }
 
+function cleanupChunks(cx,cz){
+  const maxDist = PRELOAD_RADIUS + 1;
+  for(const key in loadedChunks){
+    const parts = key.split(',');
+    const x = parseInt(parts[0]);
+    const z = parseInt(parts[1]);
+    const dx = Math.abs(x - cx);
+    const dz = Math.abs(z - cz);
+    if(Math.max(dx, dz) > maxDist){
+      scene.remove(loadedChunks[key]);
+      delete loadedChunks[key];
+      delete loadedCells[key];
+      delete loadedWalls[key];
+    }
+  }
+}
+
 function spawnEnemy(x,z){
   const geo=new THREE.SphereGeometry(0.3,16,16);
   const mat=new THREE.MeshNormalMaterial();
@@ -228,6 +246,7 @@ export function update3D(delta){
   if(cxi!==chunkX||czi!==chunkZ){
     chunkX=cxi;chunkZ=czi;
     preloadAround(cxi,czi);
+    cleanupChunks(cxi,czi);
   }
   spawnTimer-=delta;
   if(spawnTimer<=0){
