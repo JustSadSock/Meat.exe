@@ -5,6 +5,7 @@ import { updateBlood, spawnBlood, getBlood, bindPlayer, applyBloodEffects } from
 import { initMeta, mutateRules, getRules, setPerformanceSettings, formatRules } from './metaMutate.js';
 import { AABB, circleVsCircle, circleInsideAABB, clampCircleToAABB } from './geom.js';
 import { initAudio, triggerGlitch } from './audio.js';
+import { init3D, update3D } from './map3d.js';
 
 const dev = new URLSearchParams(location.search).get('dev') === '1';
 const canvas = document.getElementById('gl');
@@ -37,6 +38,7 @@ if(hasTouch){
   joyL.style.display='none';
   joyR.style.display='none';
 }
+init3D();
 let locked=false,cx=window.innerWidth/2,cy=window.innerHeight/2;
 if(!hasTouch){
   canvas.addEventListener('click',()=>{
@@ -241,6 +243,7 @@ let last = 0;
 function loop(ts){
   const dt = (ts - last)/1000;
   last = ts;
+  update3D(dt);
   elapsed += dt;
   shootTimer=Math.max(0,shootTimer-dt);
   if(dev) fpsEl.textContent = Math.round(1/dt)+" FPS";

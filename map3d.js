@@ -22,7 +22,6 @@ let lastShot = 0;
 let level;
 let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false;
 let velocity=3;
-let prevTime=performance.now();
 const CHUNK_SIZE=8;
 const loadedChunks={};
 const loadedCells={};
@@ -33,10 +32,9 @@ let chunkX=0,chunkZ=0;
 const SPAWN_INTERVAL=5;
 let spawnTimer=SPAWN_INTERVAL;
 
-init();
-animate();
 
-function init(){
+
+export function init3D(){
   let canvas = document.getElementById('gl3d');
   if(!canvas){
     canvas = document.createElement('canvas');
@@ -185,11 +183,8 @@ function spawnEnemy(x,z){
   return mesh;
 }
 
-function animate(){
-  requestAnimationFrame(animate);
+export function update3D(delta){
   const time=performance.now();
-  const delta=(time-prevTime)/1000;
-  prevTime=time;
   if(hasTouch){
     const rotSpeed=2.5;
     const euler=new THREE.Euler(0,0,0,'YXZ');
