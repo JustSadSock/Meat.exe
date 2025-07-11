@@ -1,4 +1,5 @@
 // 2D Simplex noise with deterministic seed. Based on Stefan Gustavson's algo
+import * as THREE from './three.module.js';
 class SimplexNoise{
   constructor(seed=0){
     this.p=new Uint8Array(256);
@@ -78,6 +79,10 @@ function listFirst(set){
   return null;
 }
 
+export const floorGeo = new THREE.PlaneGeometry(1,1);
+floorGeo.rotateX(-Math.PI/2);
+export const wallGeo = new THREE.PlaneGeometry(1,2);
+
 export function generateOrgan(cx,cy){
   const cells=[];
   const cellSet=new Set();
@@ -126,9 +131,6 @@ export function generateOrgan(cx,cy){
 export function generateTunnelMesh(cx,cy,THREE){
   const cells=generateOrgan(cx,cy);
   const group=new THREE.Group();
-  const floorGeo=new THREE.PlaneGeometry(1,1);
-  floorGeo.rotateX(-Math.PI/2);
-  const wallGeo=new THREE.PlaneGeometry(1,2);
   const floorMat=new THREE.MeshStandardMaterial({color:0x772222, roughness:0.8, metalness:0.1, emissive:0x330000});
   const wallMat=new THREE.MeshStandardMaterial({color:0x773333, roughness:0.9, metalness:0.1, emissive:0x220000});
   const cellSet=new Set(cells.map(c=>c.x+','+c.y));
@@ -168,4 +170,4 @@ export function generateTunnelMesh(cx,cy,THREE){
 }
 
 // Expose helpers for other modules (e.g. collision and rendering)
-export { edgeOpen, edgeCoord };
+export { edgeOpen, edgeCoord, floorGeo, wallGeo };
