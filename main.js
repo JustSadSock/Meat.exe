@@ -51,13 +51,21 @@ if(!hasTouch){
   });
   document.addEventListener('pointerlockchange',()=>{
     locked=document.pointerLockElement===canvas3d;
+    if(locked){
+      cx=window.innerWidth/2;
+      cy=window.innerHeight/2;
+      cross.style.left='50%';
+      cross.style.top='50%';
+    }
   });
+  // keep crosshair centered while locked
   document.addEventListener('mousemove',e=>{
     if(!locked)return;
-    cx=Math.min(window.innerWidth,Math.max(0,cx+e.movementX));
-    cy=Math.min(window.innerHeight,Math.max(0,cy+e.movementY));
-    cross.style.left=cx+'px';
-    cross.style.top=cy+'px';
+    // prevent crosshair drift
+    cx=window.innerWidth/2;
+    cy=window.innerHeight/2;
+    cross.style.left='50%';
+    cross.style.top='50%';
   });
 } 
 else {
