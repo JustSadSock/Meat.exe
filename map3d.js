@@ -57,7 +57,8 @@ export function init3D(){
   setSeed(0);
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
-  camera.position.y = 1.6;
+  // raise spawn slightly to avoid clipping through the floor
+  camera.position.y = 1.8;
 
   controls = new PointerLockControls(camera, canvas);
   canvas.addEventListener('click', () => controls.lock());
@@ -163,7 +164,24 @@ function loadChunk(cx,cz){
     scene.add(mesh);
     loadedChunks[key]=mesh;
     loadedCells[key]=generateOrgan(cx,cz);
-    loadedWalls[key]=computeWalls(loadedCells[key],cx,cz);
+    let newWalls=computeWalls(loadedCells[key],cx,cz);
+    // remove duplicates that may occur when neighbouring chunks generate the
+    // same wall geometry
+    for(const oKey in loadedWalls){
+      const other=loadedWalls[oKey];
+      for(let i=newWalls.length-1;i>=0;i--){
+        const w=newWalls[i];
+        for(let j=other.length-1;j>=0;j--){
+          const ow=other[j];
+          if(w.x===ow.x&&w.y===ow.y&&w.w===ow.w&&w.h===ow.h){
+            other.splice(j,1);
+            newWalls.splice(i,1);
+            break;
+          }
+        }
+      }
+    }
+    loadedWalls[key]=newWalls;
   }
 }
 
