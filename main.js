@@ -9,6 +9,7 @@ import { init3D, update3D } from './map3d.js';
 
 const dev = new URLSearchParams(location.search).get('dev') === '1';
 const canvas = document.getElementById('gl');
+const canvas3d = document.getElementById('gl3d');
 const gl = canvas.getContext('webgl2');
 
 initEngine(gl, canvas, dev);
@@ -41,15 +42,15 @@ if(hasTouch){
 init3D();
 let locked=false,cx=window.innerWidth/2,cy=window.innerHeight/2;
 if(!hasTouch){
-  canvas.addEventListener('click',()=>{
+  canvas3d.addEventListener('click',()=>{
     if(!locked){
-      canvas.requestPointerLock();
+      canvas3d.requestPointerLock();
       initAudio();
     }
     else fire();
   });
   document.addEventListener('pointerlockchange',()=>{
-    locked=document.pointerLockElement===canvas;
+    locked=document.pointerLockElement===canvas3d;
   });
   document.addEventListener('mousemove',e=>{
     if(!locked)return;
