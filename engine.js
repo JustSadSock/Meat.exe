@@ -25,7 +25,7 @@ export function initEngine(g,c,dev){
   enemyLocColor=gl.getUniformLocation(enemyProgram,'u_color');
   enemyLocSize=gl.getUniformLocation(enemyProgram,'u_size');
   buf=gl.createBuffer();
-  gl.clearColor(0,0,0,1);
+  gl.clearColor(0,0,0,0);
 }
 
 export function kickFov(amount){
@@ -116,9 +116,9 @@ export function renderFrame(dt,bullets,enemyGroups,blood,items,map,bulletSize,ma
   if(glitch){
     glitchTime-=dt;
     if(glitchTime<=0) glitch=false;
-    gl.clearColor(Math.random(),0,0.1,1);
+    gl.clearColor(Math.random(),0,0.1,0);
   } else {
-    gl.clearColor(0.02*pulse,0.02,0.02*pulse,1);
+    gl.clearColor(0.02*pulse,0.02,0.02*pulse,0);
   }
   camFov += (targetFov*baseFov - camFov) * dt * 8.0;
   targetFov += (baseFov - targetFov) * dt * 2.0;
