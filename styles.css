@@ -2,6 +2,8 @@ html,body{width:100vw;height:100vh;margin:0;overflow:hidden;touch-action:none;ba
 canvas{position:absolute;top:0;left:0;display:block;width:100%;height:100%;}
 #gl{z-index:1;pointer-events:none;}
 #gl3d{position:absolute;}
+#playerHealth{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:200px;height:10px;border:1px solid #fff;background:rgba(0,0,0,0.5);z-index:2}
+#playerHealth .bar{height:100%;background:#0f0;width:100%;}
 .panel{position:absolute;padding:4px 8px;background:rgba(0,0,0,0.3);backdrop-filter:blur(6px);text-shadow:0 0 6px currentColor;border:1px solid rgba(255,255,255,0.1);white-space:pre}
 #meta{top:4px;left:4px}
 #fps{bottom:4px;right:4px}
