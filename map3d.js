@@ -53,6 +53,7 @@ export function init3D(){
   light = new THREE.PointLight(0xff4444, 2, 10);
   light.position.set(0,2,0);
   scene.add(light);
+  scene.add(new THREE.AmbientLight(0x330000, 0.3));
   setSeed(0);
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
