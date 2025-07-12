@@ -29,6 +29,19 @@ describe('gore simulation', () => {
     expect(getBlood().length).toBeLessThan(initialLength);
   });
 
+  test('updateBlood moves particles based on dt', () => {
+    spawnBlood(0, 0, 'normal', 1);
+    const b = getBlood()[0];
+    const startX = b.x;
+    const startY = b.y;
+    const dt = 0.5;
+    const dx = b.dx;
+    const dy = b.dy;
+    updateBlood(dt);
+    expect(b.x).toBeCloseTo(startX + dx * dt);
+    expect(b.y).toBeCloseTo(startY + dy * dt);
+  });
+
   test('applyBloodEffects damages nearby entities', () => {
     const enemy = { x: 0, y: 0, hp: 5, speed: 1 };
     const player = { x: 0, y: 0, hp: 5 };

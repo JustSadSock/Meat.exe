@@ -25,7 +25,7 @@ export function spawnBlood(x,y,state='normal',amount=10){
 
 export function updateBlood(dt){
   blood.forEach(p=>{
-    p.x+=p.dx; p.y+=p.dy; p.life-=dt;
+    p.x+=p.dx*dt; p.y+=p.dy*dt; p.life-=dt;
     if(p.state==='burning') p.life-=dt*0.5;
     if(p.state==='frozen') p.life-=dt*0.2;
     if(p.state==='acidic') p.life-=dt*0.3;
