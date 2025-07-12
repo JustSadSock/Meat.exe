@@ -130,13 +130,23 @@ export function generateTunnelMesh(cx,cy,THREE){
   const cells=generateOrgan(cx,cy);
   if(!floorGeo){
     floorGeo=new THREE.PlaneGeometry(1,1);
-    floorGeo.rotateX(-Math.PI/2);
-    wallGeo=new THREE.BoxGeometry(1,2,0.1);
-    wallGeo.translate(0,1,0);
+    floorGeo.rotateX(-Math.PI/2);   // кладём горизонтально (XZ)
   }
+
+  if(!wallGeo){
+    wallGeo=new THREE.BoxGeometry(1,2,0.1);
+    wallGeo.translate(0,1,0);       // основание в Y-0
+  }
+
   if(!floorMat){
-    floorMat=new THREE.MeshStandardMaterial({color:0xb01515,emissive:0x300000,side:THREE.DoubleSide});
-    wallMat=new THREE.MeshStandardMaterial({color:0xb01515,emissive:0x300000,side:THREE.DoubleSide});
+    floorMat=new THREE.MeshStandardMaterial({
+        color:0xb01515,   // ярче
+        emissive:0x300000,
+        roughness:0.9,
+        metalness:0,
+        side:THREE.DoubleSide
+    });
+    wallMat=floorMat;       // тот же материал для стен
   }
   const group=new THREE.Group();
   group.castShadow=group.receiveShadow=true;
