@@ -15,6 +15,9 @@ function getAimJoy(){
 let camera, scene, renderer, controls;
 let enemies = [];
 let enemyBullets = [];
+let playerHp = 100;
+const PLAYER_MAX_HP = 100;
+let playerHpBar;
 let enemyMat;
 let bulletGeo;
 let light;
@@ -48,6 +51,8 @@ export function init3D(){
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   crosshair = document.getElementById('crosshair');
+  const hpEl = document.getElementById('playerHealth');
+  if(hpEl) playerHpBar = hpEl.querySelector('.bar');
   raycaster = new THREE.Raycaster();
   bulletGeo = new THREE.SphereGeometry(0.05,8,8);
 
@@ -242,6 +247,7 @@ function spawnEnemy(x,z){
     shooter: !!t.shooter,
     nextShot: 1 + Math.random(),
     bar,
+    barBg,
     mesh
   };
   group.position.set(x,0,z);
@@ -304,6 +310,12 @@ export function update3D(delta){
     preloadAround(cxi,czi);
     cleanupChunks(cxi,czi);
   }
+  // also load chunk in view direction
+  const dir=new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  const lookX=Math.floor((camera.position.x+dir.x*CHUNK_SIZE*PRELOAD_RADIUS)/CHUNK_SIZE);
+  const lookZ=Math.floor((camera.position.z+dir.z*CHUNK_SIZE*PRELOAD_RADIUS)/CHUNK_SIZE);
+  loadChunk(lookX,lookZ);
   spawnTimer-=delta;
   if(spawnTimer<=0){
     spawnTimer=SPAWN_INTERVAL;
@@ -318,7 +330,17 @@ export function update3D(delta){
     const l=Math.hypot(dx,dz)||1e-6;
     e.position.x+=dx/l*e.userData.speed*delta;
     e.position.z+=dz/l*e.userData.speed*delta;
-    e.userData.bar.scale.x = (e.userData.hp/e.userData.maxHp)*0.5;
+    if(l<PLAYER_R*2){
+      playerHp = Math.max(0, playerHp-20*delta);
+    }
+    const ratio=e.userData.hp/e.userData.maxHp;
+    e.userData.bar.scale.x = ratio*0.5;
+    // anchor bar to the left side
+    e.userData.bar.position.x = -(0.5 - e.userData.bar.scale.x)/2;
+    e.userData.bar.lookAt(camera.position);
+    if(e.userData.barBg) e.userData.barBg.lookAt(camera.position);
+    if(e.userData.bar.material)
+      e.userData.bar.material.color.setHSL(ratio*0.33,1,0.5);
     if(e.userData.shooter){
       e.userData.nextShot -= delta;
       if(e.userData.nextShot<=0){
@@ -332,9 +354,15 @@ export function update3D(delta){
       }
     }
   });
+  const playerPos = camera.position.clone();
   enemyBullets=enemyBullets.filter(b=>{
     b.position.addScaledVector(b.userData.vel,delta);
     b.userData.life-=delta;
+    if(b.position.distanceTo(playerPos)<PLAYER_R){
+      playerHp = Math.max(0, playerHp-10);
+      scene.remove(b);
+      return false;
+    }
     if(b.userData.life<=0){
       scene.remove(b);
       return false;
@@ -367,10 +395,17 @@ export function update3D(delta){
             enemies.splice(enemies.indexOf(enemy),1);
           }
         }
+        const flash=new THREE.PointLight(0xffaa00,1,2);
+        flash.position.copy(camera.position);
+        scene.add(flash);
+        setTimeout(()=>scene.remove(flash),100);
         lastShot=now;
       }
     }else{
       crosshair.style.color='';
     }
+  if(playerHpBar){
+    playerHpBar.style.width = (playerHp/PLAYER_MAX_HP*100)+'%';
+  }
   renderer.render(scene, camera);
 }

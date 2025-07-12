@@ -176,7 +176,8 @@ export function generateTunnelMesh(cx,cy,THREE){
         else if(i===3) skip=ly===0 && edgeOpenings[0] && lx===edgeCoords[0];
         if(!skip){
           const wall=new THREE.Mesh(wallGeo,wallMat);
-          wall.position.set(fx+dx*0.5,1,fz+dy*0.5);
+          // position so the bottom aligns with the floor
+          wall.position.set(fx+dx*0.5,0,fz+dy*0.5);
           wall.rotation.y=i===0?-Math.PI/2:i===2?Math.PI/2:i===1?Math.PI:0;
           group.add(wall);
         }
