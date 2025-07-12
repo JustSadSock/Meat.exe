@@ -14,7 +14,9 @@ function getAimJoy(){
 
 let camera, scene, renderer, controls;
 let enemies = [];
+let enemyBullets = [];
 let enemyMat;
+let bulletGeo;
 let light;
 let organMat;
 let raycaster;
@@ -47,6 +49,7 @@ export function init3D(){
   renderer.setSize(window.innerWidth, window.innerHeight);
   crosshair = document.getElementById('crosshair');
   raycaster = new THREE.Raycaster();
+  bulletGeo = new THREE.SphereGeometry(0.05,8,8);
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x050505);
@@ -211,14 +214,40 @@ function cleanupChunks(cx,cz){
 }
 
 function spawnEnemy(x,z){
+  const types = [
+    { color: 0xff0000, hp: 3, speed: 1 },                // normal
+    { color: 0x00ff00, hp: 2, speed: 2, shooter: true }, // shooter
+    { color: 0x888888, hp: 6, speed: 0.6 }               // tank
+  ];
+  const t = types[Math.floor(Math.random()*types.length)];
   const geo=new THREE.SphereGeometry(0.3,16,16);
-  if(!enemyMat) enemyMat=new THREE.MeshStandardMaterial({color:0xff0000});
-  const mesh=new THREE.Mesh(geo,enemyMat);
+  const mat=new THREE.MeshStandardMaterial({color:t.color});
+  const mesh=new THREE.Mesh(geo,mat);
   mesh.position.set(x,0.3,z);
-  mesh.userData = { hp: 3, speed: 1 };
-  scene.add(mesh);
-  enemies.push(mesh);
-  return mesh;
+  const barBg = new THREE.Sprite(new THREE.SpriteMaterial({ color:0x550000 }));
+  barBg.scale.set(0.5,0.05,1);
+  barBg.position.set(0,0.8,0);
+  const bar = new THREE.Sprite(new THREE.SpriteMaterial({ color:0x00ff00 }));
+  bar.scale.set(0.5,0.05,1);
+  bar.position.set(0,0.8,0.001);
+  const group=new THREE.Group();
+  group.add(mesh);
+  group.add(barBg);
+  group.add(bar);
+  group.position.y=0;
+  group.userData = {
+    hp: t.hp,
+    maxHp: t.hp,
+    speed: t.speed,
+    shooter: !!t.shooter,
+    nextShot: 1 + Math.random(),
+    bar,
+    mesh
+  };
+  group.position.set(x,0,z);
+  scene.add(group);
+  enemies.push(group);
+  return group;
 }
 
 export function update3D(delta){
@@ -289,6 +318,28 @@ export function update3D(delta){
     const l=Math.hypot(dx,dz)||1e-6;
     e.position.x+=dx/l*e.userData.speed*delta;
     e.position.z+=dz/l*e.userData.speed*delta;
+    e.userData.bar.scale.x = (e.userData.hp/e.userData.maxHp)*0.5;
+    if(e.userData.shooter){
+      e.userData.nextShot -= delta;
+      if(e.userData.nextShot<=0){
+        e.userData.nextShot=1+Math.random();
+        const bullet=new THREE.Mesh(bulletGeo,new THREE.MeshBasicMaterial({color:0xffffff}));
+        bullet.position.copy(e.position);
+        const dir=new THREE.Vector3().subVectors(camera.position,e.position).normalize();
+        bullet.userData={vel:dir.multiplyScalar(3),life:3};
+        scene.add(bullet);
+        enemyBullets.push(bullet);
+      }
+    }
+  });
+  enemyBullets=enemyBullets.filter(b=>{
+    b.position.addScaledVector(b.userData.vel,delta);
+    b.userData.life-=delta;
+    if(b.userData.life<=0){
+      scene.remove(b);
+      return false;
+    }
+    return true;
   });
   const t=time*0.001;
   const p=0.5+Math.sin(t*2)*0.5;
@@ -301,17 +352,19 @@ export function update3D(delta){
     light.position.copy(camera.position);
   }
   raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-  const hits = raycaster.intersectObjects(enemies);
+  const enemyMeshes = enemies.map(e=>e.userData.mesh);
+  const hits = raycaster.intersectObjects(enemyMeshes);
     if(hits.length>0){
       crosshair.style.color='#ff0040';
       const now=performance.now();
       if(now-lastShot>500){
         const mesh=hits[0].object;
-        if(enemies.includes(mesh)){
-          mesh.userData.hp-=1;
-          if(mesh.userData.hp<=0){
-            scene.remove(mesh);
-            enemies.splice(enemies.indexOf(mesh),1);
+        const enemy=enemies.find(en=>en.userData.mesh===mesh);
+        if(enemy){
+          enemy.userData.hp-=1;
+          if(enemy.userData.hp<=0){
+            scene.remove(enemy);
+            enemies.splice(enemies.indexOf(enemy),1);
           }
         }
         lastShot=now;

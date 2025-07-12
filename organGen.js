@@ -129,7 +129,10 @@ export function generateOrgan(cx,cy){
 export function generateTunnelMesh(cx,cy,THREE){
   const cells=generateOrgan(cx,cy);
   if(!floorGeo){
-    floorGeo=new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2);   // кладём горизонтально (XZ)
+    // Slightly raise the floor to avoid depth fighting with walls
+    floorGeo=new THREE.PlaneGeometry(1,1)
+      .rotateX(-Math.PI/2)
+      .translate(0,0.01,0);   // кладём горизонтально (XZ)
   }
 
   if(!wallGeo){
