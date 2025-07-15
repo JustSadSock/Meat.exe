@@ -291,7 +291,9 @@ function loop(ts){
              CHUNK_SIZE+PLAYER_R*2,
              CHUNK_SIZE+PLAYER_R*2));
       loadedChunks[key]=cells;
-      console.log('generate',key,cells);
+      if(dev){
+        console.log('generate',key,cells);
+      }
     }
   }
   for(let i=bullets.length-1;i>=0;i--){
