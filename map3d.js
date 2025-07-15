@@ -29,8 +29,9 @@ let level;
 let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false;
 // Base walking speed (increased for faster movement)
 let velocity=4.5;
-const baseCameraY = 1.8;
+const baseCameraY = 1.6; // lowered to more natural eye height
 let bobTime = 0;
+let prevPos = new THREE.Vector3();
 const CHUNK_SIZE=8;
 const loadedChunks={};
 const loadedCells={};
@@ -92,6 +93,8 @@ export function init3D(){
     camera.position.x = first.x + 0.5;
     camera.position.z = first.y + 0.5;
   }
+  // remember starting position for bobbing calculations
+  prevPos.copy(camera.position);
 
   spawnTimer = SPAWN_INTERVAL;
 
@@ -286,11 +289,14 @@ export function update3D(delta){
   if(moveLeft) controls.moveRight(-velocity*delta);
   if(moveRight) controls.moveRight(velocity*delta);
 
-  const moving = moveForward || moveBackward || moveLeft || moveRight || Math.abs(getMoveJoy().x)>0.01 || Math.abs(getMoveJoy().y)>0.01;
-  if(moving) bobTime += delta * 8;
+  const dist = camera.position.clone().sub(prevPos).length();
+  const speed = dist/delta;
+  prevPos.copy(camera.position);
+  const speedRatio = Math.min(speed/velocity, 1);
+  if(speed>0.01) bobTime += speedRatio * delta * 8;
   else bobTime -= delta * 8;
   bobTime = Math.max(0, bobTime);
-  camera.position.y = baseCameraY + Math.sin(bobTime) * 0.05;
+  camera.position.y = baseCameraY + Math.sin(bobTime) * 0.05 * speedRatio;
 
   // collision detection using wall geometry
   const player={x:camera.position.x,y:camera.position.z,r:PLAYER_R};
