@@ -133,6 +133,8 @@ export function renderFrame(dt,bullets,enemyGroups,blood,items,map,bulletSize,ma
   drawPoints(flashes,[1,0.8,0],bulletSize*2.0);
   drawPoints(items,[0,0.8,1.0],8.0);
   drawPoints(blood,[0.8*pulse,0,0],4.0);
+  const enemyCount=(enemyGroups||[]).reduce((s,g)=>s+g.points.length,0);
+  console.log(`Render: bullets ${bullets.length}, enemies ${enemyCount}, blood ${blood.length}, items ${items.length}, map ${map.length}, FOV ${camFov.toFixed(2)}`);
 }
 
 export function setGlitch(state){
