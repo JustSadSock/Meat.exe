@@ -260,7 +260,8 @@ function loop(ts){
   const rules=getRules();
   let ax=(keys['d']?1:0)-(keys['a']?1:0)+moveJoy.x;
   let ay=(keys['s']?1:0)-(keys['w']?1:0)+moveJoy.y;
-  let accel=0.6*(sprint?1.8:1);
+  // Increase player acceleration for faster movement
+  let accel=0.9*(sprint?1.8:1);
   if(ax||ay && slideTimer<=0){
     const l=Math.hypot(ax,ay);ax/=l;ay/=l;
     player.vx+=ax*accel*dt;
